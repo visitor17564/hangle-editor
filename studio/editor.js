@@ -14,6 +14,9 @@ import { PDFDocument } from "pdf-lib";
 import { loadWebFonts } from "./fonts.js";
 import { documentHtml, importMarkdownHtml } from "./markdown.js";
 import { addConversionMenuItems } from "./file-commands.js";
+import { installEditorControls } from "./editor-controls.js";
+import { installTextSelection } from "./text-selection.js";
+import { installTableResize } from "./table-resize.js";
 
 const byId = id => document.getElementById(id);
 const status = text => { byId("sb-message").textContent = text; };
@@ -51,6 +54,7 @@ bus.on("document-dirty-changed", () => bus.emit("command-state-changed"));
 bus.on("vault-action", action => send({ type: "action", action }));
 bus.on("vault-error", message => send({ type: "error", message }));
 bus.on("equation-edit-request", () => runtime.dispatcher.dispatch("insert:equation-edit"));
+bus.on("chart-data-edit-request", () => runtime.dispatcher.dispatch("insert:chart-data-edit"));
 
 function setupChrome() {
   const surface = byId("scroll-container");
@@ -65,6 +69,8 @@ function setupChrome() {
   input.setTableObjectRenderer(new TableObjectRenderer(surface, scroll));
   input.setTableResizeRenderer(new TableResizeRenderer(surface, scroll));
   input.setPictureObjectRenderer(new TableObjectRenderer(surface, scroll, true));
+  installTextSelection(surface, input);
+  installTableResize(surface, input);
   toolbar = new Toolbar(byId("style-bar"), wasm, bus, runtime.dispatcher);
   initStyleToolbarOverflow(byId("style-bar"));
   initToolbarLabels();
@@ -72,18 +78,7 @@ function setupChrome() {
   addConversionMenuItems();
   new MenuBar(byId("menu-bar"), bus, runtime.dispatcher, runtime.registry);
   document.querySelector('[data-cmd="file:new-window"] .md-label').textContent = "새 탭";
-  for (const button of document.querySelectorAll(".tb-btn[data-cmd], .tb-split-item[data-cmd]")) {
-    button.addEventListener("mousedown", event => {
-      event.preventDefault();
-      button.closest(".tb-split")?.classList.remove("open");
-      runtime.dispatcher.dispatch(button.dataset.cmd, { anchorEl: button });
-    });
-  }
-  document.addEventListener("mousedown", event => {
-    const split = event.target.closest(".tb-split-arrow")?.closest(".tb-split");
-    document.querySelectorAll(".tb-split.open").forEach(el => { if (el !== split) el.classList.remove("open"); });
-    if (split) { event.preventDefault(); split.classList.toggle("open"); }
-  });
+  installEditorControls(runtime, input, send);
   document.addEventListener("rhwp-modal-dialog-closed", () => { if (input.isActive()) input.focus(); });
   for (const [id, delta] of [["sb-zoom-in", 0.1], ["sb-zoom-out", -0.1]]) {
     byId(id).onclick = () => viewport.setZoom(viewport.getZoom() + delta);

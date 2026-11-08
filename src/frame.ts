@@ -1,5 +1,10 @@
 import { studioGzip, wasmGzip } from "hangle-editor:assets";
 
+type NativeEditCommands = { copy(): void; cut(): void; paste(): void };
+type DesktopWindow = Window & {
+  require?(id: "electron"): { remote: { getCurrentWebContents(): NativeEditCommands } };
+};
+
 const decode64 = (value: string): ArrayBuffer => Uint8Array.from(atob(value), ch => ch.charCodeAt(0)).buffer;
 async function unpack(value: string) {
   const stream = new Blob([decode64(value)]).stream().pipeThrough(new DecompressionStream("gzip"));
@@ -76,11 +81,28 @@ export class StudioFrame {
         this.requests.delete(data.id);
         if (data.error || !(data.bytes instanceof ArrayBuffer)) job.reject(Error(data.error || "문서 데이터를 받을 수 없습니다."));
         else job.resolve(data);
+      } else if (data?.type === "clipboard-command") {
+        this.runClipboardCommand(data.command);
       } else if (data) {
         if (data.type === "ready") this.ready = true;
         this.onEvent(data);
       }
     };
+  }
+  private runClipboardCommand(command: unknown) {
+    if (command !== "copy" && command !== "cut" && command !== "paste") return;
+    const doc = this.iframe.ownerDocument;
+    if (!this.ready || this.disposed || doc.activeElement !== this.iframe || !doc.hasFocus() ||
+        !doc.defaultView?.navigator.userActivation.isActive) return;
+    // Chromium delivers the native edit event to the focused frame, including in
+    // an Obsidian pop-out. Clipboard bytes never cross the plugin message port.
+    try {
+      const contents = (doc.defaultView as DesktopWindow).require?.("electron").remote.getCurrentWebContents();
+      if (!contents) throw Error();
+      contents[command]();
+    } catch {
+      this.onEvent({ type: "error", message: "클립보드 명령을 실행하지 못했습니다." });
+    }
   }
   async load(bytes: ArrayBuffer, name: string, edited = false) {
     this.format = /\.hwpx$/i.test(name) ? "hwpx" : "hwp";
