@@ -16,6 +16,8 @@ Download `main.js`, `manifest.json`, and `styles.css` from a GitHub release. Put
 
 Click an HWP or HWPX file in your vault to edit it in a tab. Use the ribbon icon or the **Hangle Editor** commands in the command palette to create a new HWPX document. Save with **Ctrl+S** (**Cmd+S** on macOS). The **File** menu also lets you export to PDF or Markdown and turn a Markdown note into an editable HWPX document. Editing and conversion work offline.
 
+New documents go to the vault root unless you choose a folder under **Settings → Hangle Editor**. The separate attachment command follows **Files & Links → Default location for new attachments**, relative to the active file where applicable.
+
 ## 시작하기
 
 1. GitHub 릴리스에서 `main.js`, `manifest.json`, `styles.css`를 받습니다. [릴리스](https://github.com/visitor17564/hangle-editor/releases/latest)
@@ -30,7 +32,8 @@ Click an HWP or HWPX file in your vault to edit it in a tab. Use the ribbon icon
 
 | 명령 팔레트 | 사용 방법 |
 | --- | --- |
-| 새 한글 문서 만들기 (HWPX) | 보관함에 빈 `.hwpx` 파일을 만들고 엽니다. |
+| 새 한글 문서 만들기 (HWPX) | 보관함 최상위에 빈 `.hwpx`를 만들고 엽니다. **설정 → Hangle Editor → 새 문서 기본 폴더 → 폴더 선택**에서 저장 위치를 바꿀 수 있습니다. 리본과 편집기의 **파일 → 새로 만들기**도 같은 위치를 씁니다. |
+| 첨부파일 위치에 새 HWPX 만들기 | **설정 → 파일 및 링크 → 새 첨부파일을 만들 위치**를 따라 빈 `.hwpx`를 만들고 엽니다. ‘현재 파일과 같은 폴더’ 또는 ‘현재 폴더의 하위 폴더’는 명령 실행 시 열려 있던 파일을 기준으로 합니다. |
 | 한글 문서 열기 | 보관함 안의 HWPX·HWP 파일을 검색합니다. |
 | 한글 문서 저장 | 현재 편집한 내용으로 파일을 저장합니다. 편집 중에는 `Ctrl/Cmd+S`도 쓸 수 있습니다. |
 | 한글 문서 다른 이름으로 저장 | 기본 확장자는 `.hwpx`입니다. `.hwp`를 선택하면 호환 형식으로 저장합니다. `.pdf`와 `.md`도 지정할 수 있습니다. |
@@ -68,7 +71,9 @@ HOP 0.4.5의 편집 화면과 rhwp 0.8.7의 문서 엔진을 사용합니다. Ma
 
 이 저장소에서 작성한 플러그인 코드는 MIT 라이선스로 배포합니다. 사용하는 HOP와 rhwp 커밋도 MIT이며, 두 원본의 저작권·허가 고지와 rhwp의 제3자 고지를 보존합니다. [플러그인 라이선스](LICENSE) · [HOP·rhwp 라이선스](licenses/HOP-and-rhwp.txt) · [rhwp 의존성 고지](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/THIRD_PARTY_LICENSES.md)
 
-0.2.2에 포함된 rhwp 엔진은 한글 인코딩 변환에 `encoding_rs` 0.8.42를 사용합니다. 소스에 대한 MIT 고지와 WHATWG 문자표에 대한 BSD 3-Clause 고지는 여기에서 읽을 수 있습니다. [encoding_rs 저작권 및 사용 조건](licenses/encoding_rs-0.8.42.txt)
+rhwp 엔진은 한글 인코딩 변환에 `encoding_rs` 0.8.42를 사용합니다. 소스에 대한 MIT 고지와 WHATWG 문자표에 대한 BSD 3-Clause 고지는 여기에서 읽을 수 있습니다. [encoding_rs 저작권 및 사용 조건](licenses/encoding_rs-0.8.42.txt)
+
+0.2.3부터 편집기의 메뉴·도구 모음·확대/축소에는 [Lucide](https://lucide.dev)를 사용합니다. 사용하는 아이콘만 내장하므로 오프라인에서도 볼 수 있으며, Lucide(ISC)와 Feather 유래 아이콘(MIT)의 고지를 배포 파일에 포함합니다. Obsidian 왼쪽의 ‘새 한글 문서’ 리본은 이 프로젝트에서 만든 SVG입니다. [Lucide·Feather 라이선스](licenses/lucide-1.70.0.txt)
 
 0.2.2의 도구 모음에는 상위 프로젝트의 밝은 테마와 어두운 테마용 SVG 아이콘이 들어 있습니다. rhwp 작업 기록에는 한컴 웹기안기의 아이콘을 복사한 뒤 어두운 테마용 색상을 만들었다고 나옵니다. 현재 확인한 자료로는 이 두 이미지의 재배포 허락을 확인할 수 없습니다. [원본 아이콘 도입 기록](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/mydocs/working/archives/task_52_step_report.md#L124-L128) · [어두운 테마 아이콘 제작 기록](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/mydocs/working/archives/task_m100_1158_stage5.md)
 

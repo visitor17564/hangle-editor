@@ -96,7 +96,7 @@ class DocumentSession {
   }
   async action(action: string) {
     if (!this.ready) return;
-    if (action === "new") { await this.plugin.newDocument(this.target.original.parent ?? undefined); return; }
+    if (action === "new") { await this.plugin.newDocument(); return; }
     if (action === "import-md") { await this.plugin.importMarkdown(); return; }
     if (action === "palette") {
       const doc = this.status.ownerDocument;

@@ -43,7 +43,13 @@ const editorImports = {
       return { path: sourceFile(file) };
     });
     b.onResolve({ filter: /^\.\/font-loader(\.ts)?$/ }, () => ({ path: path.join(local, "fonts.js") }));
-    b.onResolve({ filter: /^\/images\/icon_small_ko(_dark)?\.svg$/ }, ({ path: id }) => ({ path: path.join(host, "public", id.slice(1)) }));
+    // The theme contains two external sprite URLs. Omit the declarations before esbuild
+    // resolves any assets; studio/icons.css supplies only the Lucide glyphs we use.
+    b.onLoad({ filter: /[\\/]styles[\\/]base\.css$/ }, ({ path: file }) => {
+      if (file !== path.join(upstream, "styles", "base.css")) return;
+      const contents = read(file).replace(/^\s*--ui-icon-sprite-url:[^;\n]+;/gm, "");
+      return { contents, loader: "css", resolveDir: path.dirname(file) };
+    });
   }
 };
 
@@ -78,7 +84,7 @@ const notices = [
   path.join(root, "licenses/encoding_rs-0.8.42.txt"),
   ...["@noble/hashes/LICENSE", "pdf-lib/LICENSE.md", "@pdf-lib/standard-fonts/LICENSE.md",
     "@pdf-lib/upng/LICENSE", "pako/LICENSE", "tslib/LICENSE.txt", "tslib/CopyrightNotice.txt",
-    "marked/LICENSE", "fflate/LICENSE"].map(f => path.join(root, "node_modules", f))
+    "marked/LICENSE", "fflate/LICENSE", "lucide-static/LICENSE"].map(f => path.join(root, "node_modules", f))
 ].map(file => read(file).replaceAll("*/", "* /")).join("\n\n");
 await build({
   absWorkingDir: root, entryPoints: ["src/main.ts"], outfile: "main.js", bundle: true, format: "cjs",

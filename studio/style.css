@@ -1,4 +1,5 @@
 @import "@hop/style.css";
+@import "./icons.css";
 
 /* The popup is a child of the combo. Its value label handles long font names. */
 #style-bar .custom-select[data-select-id="font-name"] {

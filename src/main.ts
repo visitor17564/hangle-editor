@@ -1,17 +1,23 @@
-import { addIcon, MarkdownView, Notice, Plugin, removeIcon, TFile, TFolder, WorkspaceLeaf } from "obsidian";
+import { addIcon, MarkdownView, Notice, Plugin, removeIcon, TFile, WorkspaceLeaf } from "obsidian";
 import { createHwpx } from "./frame";
 import { availablePath, DocumentPicker, supported, VaultWriter } from "./files";
 import { HwpView, VIEW_TYPE, type Draft } from "./view";
 import { noteHtml } from "./markdown";
 import { HangleSettings, NEW_ICON, NEW_ICON_SVG } from "./settings";
 
+const NEW_BASENAME = "새 한글 문서";
+
 export default class HangleEditor extends Plugin {
   writer!: VaultWriter;
   private drafts = new WeakMap<WorkspaceLeaf, Draft>();
-  showRibbon = true;
+  settings = { showRibbon: true, newDocumentFolder: "" };
   private ribbon?: HTMLElement;
   async onload() {
-    this.showRibbon = (await this.loadData())?.showRibbon !== false;
+    const data = await this.loadData();
+    this.settings = {
+      showRibbon: data?.showRibbon !== false,
+      newDocumentFolder: typeof data?.newDocumentFolder === "string" ? data.newDocumentFolder : ""
+    };
     this.writer = new VaultWriter(this.app.vault);
     addIcon(NEW_ICON, NEW_ICON_SVG);
     this.register(() => removeIcon(NEW_ICON));
@@ -20,6 +26,7 @@ export default class HangleEditor extends Plugin {
     this.registerView(VIEW_TYPE, leaf => new HwpView(leaf, this));
     this.registerExtensions(["hwp", "hwpx"], VIEW_TYPE);
     this.addCommand({ id: "new-document", name: "새 한글 문서 만들기 (HWPX)", callback: () => this.report(this.newDocument()) });
+    this.addCommand({ id: "new-attachment-document", name: "첨부파일 위치에 새 HWPX 만들기", callback: () => this.report(this.newAttachmentDocument()) });
     this.addCommand({ id: "open-document", name: "한글 문서 열기", callback: () => this.pick() });
     this.addCommand({ id: "import-md", name: "Markdown에서 HWPX 만들기", callback: () => this.report(this.importMarkdown()) });
     for (const [id, name, action] of [["save-document", "한글 문서 저장", "save"],
@@ -34,15 +41,19 @@ export default class HangleEditor extends Plugin {
     }
   }
   async setRibbon(visible: boolean) {
-    this.showRibbon = visible;
+    this.settings.showRibbon = visible;
     this.updateRibbon();
-    await this.saveData({ showRibbon: visible });
+    await this.saveData(this.settings);
+  }
+  async setNewDocumentFolder(path: string) {
+    this.settings.newDocumentFolder = path;
+    await this.saveData(this.settings);
   }
   private updateRibbon() {
-    if (this.showRibbon && !this.ribbon) {
+    if (this.settings.showRibbon && !this.ribbon) {
       this.ribbon = this.addRibbonIcon(NEW_ICON, "새 한글 문서 만들기 (HWPX)", () => this.report(this.newDocument()));
     }
-    this.ribbon?.toggleClass("hangle-editor-ribbon-off", !this.showRibbon);
+    this.ribbon?.toggleClass("hangle-editor-ribbon-off", !this.settings.showRibbon);
   }
   report(promise: Promise<unknown>) {
     void promise.catch(error => new Notice(error instanceof Error ? error.message : String(error), 10000));
@@ -66,12 +77,21 @@ export default class HangleEditor extends Plugin {
     this.drafts.delete(leaf);
     return draft?.target.original === file ? draft : undefined;
   }
-  async newDocument(folder = this.app.fileManager.getNewFileParent(this.app.workspace.getActiveFile()?.path ?? "")) {
-    await this.createDocument(folder, "새 한글 문서", "");
+  async newDocument() {
+    const { vault } = this.app;
+    const path = this.settings.newDocumentFolder;
+    const folder = path ? vault.getFolderByPath(path) : vault.getRoot();
+    if (!folder) throw Error(`새 문서 기본 폴더를 찾을 수 없습니다: ${path}. Hangle Editor 설정에서 폴더를 다시 선택하세요.`);
+    await this.createDocument(() => availablePath(vault, folder, NEW_BASENAME, "hwpx"));
   }
-  private async createDocument(folder: TFolder | null, name: string, html: string) {
+  async newAttachmentDocument() {
+    // Capture the source before the editor creates a frame or the user switches tabs.
+    const source = this.app.workspace.getActiveFile()?.path ?? "";
+    await this.createDocument(() => this.app.fileManager.getAvailablePathForAttachment(NEW_BASENAME + ".hwpx", source));
+  }
+  private async createDocument(nextPath: () => string | Promise<string>, html = "") {
     const bytes = await createHwpx(this.app.workspace.containerEl, html);
-    const file = await this.writer.inOrder(() => this.app.vault.createBinary(availablePath(this.app.vault, folder, name, "hwpx"), bytes));
+    const file = await this.writer.inOrder(async () => this.app.vault.createBinary(await nextPath(), bytes));
     await this.open(file);
   }
   async importMarkdown(file?: TFile) {
@@ -84,7 +104,7 @@ export default class HangleEditor extends Plugin {
       return;
     }
     const text = active?.file === source ? active.editor.getValue() : await this.app.vault.read(source);
-    await this.createDocument(source.parent, source.basename, await noteHtml(this.app, source, text));
+    await this.createDocument(() => availablePath(this.app.vault, source.parent, source.basename, "hwpx"), await noteHtml(this.app, source, text));
   }
   pick(recent = false) {
     const vault = this.app.vault;

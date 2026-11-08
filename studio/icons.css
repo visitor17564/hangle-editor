@@ -1,0 +1,53 @@
+/* Both themes use the same local outlines. Menu items inherit their active/disabled color. */
+:is(.tb-sprite, .md-icon):not(.icon-ctrl-mark, .icon-para-mark)::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: var(--ui-text-secondary);
+  mask: var(--hangle-glyph, linear-gradient(transparent, transparent)) center / contain no-repeat;
+}
+.md-icon:not(.icon-ctrl-mark, .icon-para-mark)::before { background-color: currentColor; }
+
+.icon-cut { --hangle-glyph: url("lucide-static/icons/scissors.svg"); }
+.icon-copy { --hangle-glyph: url("lucide-static/icons/copy.svg"); }
+.icon-paste { --hangle-glyph: url("lucide-static/icons/clipboard-paste.svg"); }
+.icon-format-copy { --hangle-glyph: url("lucide-static/icons/paint-roller.svg"); }
+.icon-grid { --hangle-glyph: url("lucide-static/icons/grid-3x3.svg"); }
+.icon-char-shape { --hangle-glyph: url("lucide-static/icons/case-sensitive.svg"); }
+.icon-para-shape { --hangle-glyph: url("lucide-static/icons/pilcrow.svg"); }
+.icon-table { --hangle-glyph: url("lucide-static/icons/table-2.svg"); }
+.icon-shape { --hangle-glyph: url("lucide-static/icons/shapes.svg"); }
+.icon-image { --hangle-glyph: url("lucide-static/icons/image.svg"); }
+.icon-obj-props { --hangle-glyph: url("lucide-static/icons/sliders-horizontal.svg"); }
+.icon-symbols { --hangle-glyph: url("lucide-static/icons/omega.svg"); }
+.icon-hyperlink { --hangle-glyph: url("lucide-static/icons/link.svg"); }
+.icon-footnote { --hangle-glyph: url("lucide-static/icons/superscript.svg"); }
+.icon-endnote { --hangle-glyph: url("lucide-static/icons/list-end.svg"); }
+.icon-header { --hangle-glyph: url("lucide-static/icons/panel-top.svg"); }
+.icon-footer { --hangle-glyph: url("lucide-static/icons/panel-bottom.svg"); }
+.icon-find { --hangle-glyph: url("lucide-static/icons/search.svg"); }
+.icon-new-doc { --hangle-glyph: url("lucide-static/icons/file-plus-2.svg"); }
+.icon-save { --hangle-glyph: url("lucide-static/icons/save.svg"); }
+.icon-pdf, [data-cmd="file:export-pdf"] > .md-icon { --hangle-glyph: url("lucide-static/icons/file-down.svg"); }
+.icon-undo { --hangle-glyph: url("lucide-static/icons/undo-2.svg"); }
+.icon-redo { --hangle-glyph: url("lucide-static/icons/redo-2.svg"); }
+.icon-print { --hangle-glyph: url("lucide-static/icons/printer.svg"); }
+.icon-page-setup { --hangle-glyph: url("lucide-static/icons/layout-template.svg"); }
+.icon-help { --hangle-glyph: url("lucide-static/icons/info.svg"); }
+.icon-delete { --hangle-glyph: url("lucide-static/icons/trash-2.svg"); }
+.icon-select-all { --hangle-glyph: url("lucide-static/icons/text-select.svg"); }
+.icon-find-replace { --hangle-glyph: url("lucide-static/icons/replace.svg"); }
+.icon-textbox { --hangle-glyph: url("lucide-static/icons/text-cursor-input.svg"); }
+.icon-comment { --hangle-glyph: url("lucide-static/icons/message-square-text.svg"); }
+.icon-zoom-menu-in, .icon-zoom-in { --hangle-glyph: url("lucide-static/icons/zoom-in.svg"); }
+.icon-zoom-menu-out, .icon-zoom-out { --hangle-glyph: url("lucide-static/icons/zoom-out.svg"); }
+.icon-zoom-fit-width { --hangle-glyph: url("lucide-static/icons/move-horizontal.svg"); }
+.icon-zoom-fit { --hangle-glyph: url("lucide-static/icons/maximize.svg"); }
+
+[data-cmd="file:new-window"] > .md-icon { --hangle-glyph: url("lucide-static/icons/panels-top-left.svg"); }
+[data-cmd="file:open"] > .md-icon { --hangle-glyph: url("lucide-static/icons/folder-open.svg"); }
+[data-cmd="file:open-recent"] > .md-icon { --hangle-glyph: url("lucide-static/icons/history.svg"); }
+[data-cmd="file:save-as"] > .md-icon { --hangle-glyph: url("lucide-static/icons/save-all.svg"); }
+[data-cmd="file:export-md"] > .md-icon { --hangle-glyph: url("lucide-static/icons/file-output.svg"); }
+[data-cmd="file:import-md"] > .md-icon { --hangle-glyph: url("lucide-static/icons/file-input.svg"); }
