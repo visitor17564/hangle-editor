@@ -70,21 +70,21 @@ const html = template.replace(/<link rel="icon"[^>]*>/, () => `<meta http-equiv=
   .replace('<script type="module" src="/src/main.ts"></script>', () => `<script>${escapedJs}</script>`);
 if (!html.includes(csp) || html.includes('src="/src/main.ts"')) throw Error("Unknown HOP editor template");
 const payload = {
-  studioGzip: gzip64(html), wasmGzip: gzip64(wasm),
-  blankHwp: readFileSync(path.join(rhwp, "template/empty.hwp")).toString("base64")
+  studioGzip: gzip64(html), wasmGzip: gzip64(wasm)
 };
 
 const notices = [
   path.join(root, "LICENSE"), path.join(hop, "LICENSE"), path.join(rhwp, "THIRD_PARTY_LICENSES.md"),
   ...["@noble/hashes/LICENSE", "pdf-lib/LICENSE.md", "@pdf-lib/standard-fonts/LICENSE.md",
-    "@pdf-lib/upng/LICENSE", "pako/LICENSE", "tslib/LICENSE.txt", "tslib/CopyrightNotice.txt"].map(f => path.join(root, "node_modules", f))
+    "@pdf-lib/upng/LICENSE", "pako/LICENSE", "tslib/LICENSE.txt", "tslib/CopyrightNotice.txt",
+    "marked/LICENSE", "fflate/LICENSE"].map(f => path.join(root, "node_modules", f))
 ].map(file => read(file).replaceAll("*/", "* /")).join("\n\n");
 await build({
   absWorkingDir: root, entryPoints: ["src/main.ts"], outfile: "main.js", bundle: true, format: "cjs",
   platform: "browser", target: "chrome120", external: ["obsidian"], minify: true,
-  banner: { js: "/*! HWP Editor / HOP / rhwp and bundled dependencies\n" + notices + "\n*/" },
+  banner: { js: "/*! Hangle Editor / HOP / rhwp and bundled dependencies\n" + notices + "\n*/" },
   plugins: [{ name: "editor-assets", setup(b) {
-    b.onResolve({ filter: /^hwp-editor:assets$/ }, () => ({ path: "assets", namespace: "hwp" }));
+    b.onResolve({ filter: /^hangle-editor:assets$/ }, () => ({ path: "assets", namespace: "hwp" }));
     b.onLoad({ filter: /.*/, namespace: "hwp" }, () => ({ contents: Object.entries(payload).map(([k,v]) => `export const ${k}=${JSON.stringify(v)}`).join("\n") }));
   }}]
 });

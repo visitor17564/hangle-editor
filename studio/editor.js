@@ -12,6 +12,8 @@ import { initToolbarLabels } from "@hop/host/toolbar-labels";
 import { loadDocumentForOpen } from "@hop/core/document-open";
 import { PDFDocument } from "pdf-lib";
 import { loadWebFonts } from "./fonts.js";
+import { documentHtml, importMarkdownHtml } from "./markdown.js";
+import { addConversionMenuItems } from "./file-commands.js";
 
 const byId = id => document.getElementById(id);
 const status = text => { byId("sb-message").textContent = text; };
@@ -67,6 +69,7 @@ function setupChrome() {
   initStyleToolbarOverflow(byId("style-bar"));
   initToolbarLabels();
   enhanceCustomSelects(document);
+  addConversionMenuItems();
   new MenuBar(byId("menu-bar"), bus, runtime.dispatcher, runtime.registry);
   document.querySelector('[data-cmd="file:new-window"] .md-label').textContent = "새 탭";
   for (const button of document.querySelectorAll(".tb-btn[data-cmd], .tb-split-item[data-cmd]")) {
@@ -112,7 +115,11 @@ function setupChrome() {
     let command;
     if (key === "s" && !event.altKey) command = event.shiftKey ? "file:save-as" : "file:save";
     if (key === "o" && !event.shiftKey) command = event.altKey ? "file:open-recent" : "file:open";
-    if (key === "p" && !event.altKey && !event.shiftKey) command = "file:print";
+    if (key === "p" && !event.altKey && !event.shiftKey) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      send({ type: "action", action: "palette" });
+      return;
+    }
     if (!command || document.querySelector(".dialog-overlay")) return;
     event.preventDefault(); event.stopImmediatePropagation();
     runtime.dispatcher.dispatch(command);
@@ -151,7 +158,8 @@ async function handle({ data }) {
       input.flushDeferredPaginationIfNeeded("save", false);
       const version = revision;
       const output = version <= (data.after ?? -1) ? { bytes: new Uint8Array() } :
-        data.format === "pdf" ? { bytes: await exportPdf() } : wasm.exportFile(data.format);
+        data.format === "pdf" ? { bytes: await exportPdf() } :
+        data.format === "html" ? { bytes: new TextEncoder().encode(documentHtml(wasm)) } : wasm.exportFile(data.format);
       const buffer = output.bytes.slice().buffer;
       port.postMessage({ type: "reply", id: data.id, bytes: buffer, revision: version,
         losses: output.contentLoss?.count ?? 0 }, [buffer]);
@@ -167,7 +175,7 @@ async function handle({ data }) {
 }
 
 async function connect(event) {
-  if (event.source !== window.parent || event.data?.type !== "hwp-editor-connect" || !event.ports[0]) return;
+  if (event.source !== window.parent || !["hangle-editor-connect", "hangle-editor-create"].includes(event.data?.type) || !event.ports[0]) return;
   window.removeEventListener("message", connect);
   port = event.ports[0];
   const { engine, bytes, name, dark } = event.data;
@@ -176,6 +184,13 @@ async function connect(event) {
     await init({ module_or_path: engine });
     await wasm.initialize();
     await loadWebFonts();
+    if (event.data.type === "hangle-editor-create") {
+      importMarkdownHtml(wasm, event.data.html);
+      const output = wasm.exportHwpxWithReport();
+      const buffer = output.bytes.slice().buffer;
+      port.postMessage({ type: "created", bytes: buffer, losses: output.contentLoss.count }, [buffer]);
+      return;
+    }
     const info = await loadDocumentForOpen(wasm, new Uint8Array(bytes), name);
     if (!info) throw Error("문서 열기를 취소했습니다.");
     setupChrome();

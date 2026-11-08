@@ -1,20 +1,30 @@
-import { Notice, Plugin, TFile, TFolder, WorkspaceLeaf } from "obsidian";
-import { blankHwp } from "hwp-editor:assets";
-import { decode64 } from "./frame";
+import { addIcon, MarkdownView, Notice, Plugin, removeIcon, TFile, TFolder, WorkspaceLeaf } from "obsidian";
+import { createHwpx } from "./frame";
 import { availablePath, DocumentPicker, supported, VaultWriter } from "./files";
 import { HwpView, VIEW_TYPE, type Draft } from "./view";
+import { noteHtml } from "./markdown";
+import { HangleSettings, NEW_ICON, NEW_ICON_SVG } from "./settings";
 
-export default class HwpEditor extends Plugin {
+export default class HangleEditor extends Plugin {
   writer!: VaultWriter;
   private drafts = new WeakMap<WorkspaceLeaf, Draft>();
-  onload() {
+  showRibbon = true;
+  private ribbon?: HTMLElement;
+  async onload() {
+    this.showRibbon = (await this.loadData())?.showRibbon !== false;
     this.writer = new VaultWriter(this.app.vault);
+    addIcon(NEW_ICON, NEW_ICON_SVG);
+    this.register(() => removeIcon(NEW_ICON));
+    this.updateRibbon();
+    this.addSettingTab(new HangleSettings(this));
     this.registerView(VIEW_TYPE, leaf => new HwpView(leaf, this));
     this.registerExtensions(["hwp", "hwpx"], VIEW_TYPE);
-    this.addCommand({ id: "new-document", name: "새 한글 문서", callback: () => this.report(this.newDocument()) });
+    this.addCommand({ id: "new-document", name: "새 한글 문서 만들기 (HWPX)", callback: () => this.report(this.newDocument()) });
     this.addCommand({ id: "open-document", name: "한글 문서 열기", callback: () => this.pick() });
+    this.addCommand({ id: "import-md", name: "Markdown에서 HWPX 만들기", callback: () => this.report(this.importMarkdown()) });
     for (const [id, name, action] of [["save-document", "한글 문서 저장", "save"],
-      ["save-as", "한글 문서 다른 이름으로 저장", "save-as"], ["export-pdf", "PDF 내보내기", "pdf"]]) {
+      ["save-as", "한글 문서 다른 이름으로 저장", "save-as"], ["export-pdf", "PDF 내보내기", "pdf"],
+      ["export-md", "Markdown 내보내기", "md"]]) {
       this.addCommand({ id, name, checkCallback: checking => {
         const view = this.app.workspace.getActiveViewOfType(HwpView);
         if (!view?.canEdit()) return false;
@@ -22,10 +32,17 @@ export default class HwpEditor extends Plugin {
         return true;
       } });
     }
-    this.registerEvent(this.app.workspace.on("file-menu", (menu, file) => {
-      if (file instanceof TFolder) menu.addItem(item => item.setTitle("새 한글 문서").setIcon("file-plus")
-        .onClick(() => this.report(this.newDocument(file))));
-    }));
+  }
+  async setRibbon(visible: boolean) {
+    this.showRibbon = visible;
+    this.updateRibbon();
+    await this.saveData({ showRibbon: visible });
+  }
+  private updateRibbon() {
+    if (this.showRibbon && !this.ribbon) {
+      this.ribbon = this.addRibbonIcon(NEW_ICON, "새 한글 문서 만들기 (HWPX)", () => this.report(this.newDocument()));
+    }
+    this.ribbon?.toggleClass("hangle-editor-ribbon-off", !this.showRibbon);
   }
   report(promise: Promise<unknown>) {
     void promise.catch(error => new Notice(error instanceof Error ? error.message : String(error), 10000));
@@ -35,7 +52,7 @@ export default class HwpEditor extends Plugin {
     const { target, snapshot } = draft;
     if (snapshot.losses > 0) target.protectOriginal = true;
     if (this.app.vault.getAbstractFileByPath(target.original.path) !== target.original) {
-      const message = await this.writer.write(target, snapshot.bytes, snapshot.losses);
+      const message = await this.writer.inOrder(() => this.writer.write(target, snapshot.bytes, snapshot.losses));
       if (message) new Notice(message, 10000);
       await this.open(target.file);
       return;
@@ -50,8 +67,24 @@ export default class HwpEditor extends Plugin {
     return draft?.target.original === file ? draft : undefined;
   }
   async newDocument(folder = this.app.fileManager.getNewFileParent(this.app.workspace.getActiveFile()?.path ?? "")) {
-    const path = availablePath(this.app.vault, folder, "새 한글 문서", "hwp");
-    await this.open(await this.app.vault.createBinary(path, decode64(blankHwp)));
+    await this.createDocument(folder, "새 한글 문서", "");
+  }
+  private async createDocument(folder: TFolder | null, name: string, html: string) {
+    const bytes = await createHwpx(this.app.workspace.containerEl, html);
+    const file = await this.writer.inOrder(() => this.app.vault.createBinary(availablePath(this.app.vault, folder, name, "hwpx"), bytes));
+    await this.open(file);
+  }
+  async importMarkdown(file?: TFile) {
+    const active = this.app.workspace.getActiveViewOfType(MarkdownView);
+    const source = file ?? active?.file;
+    if (!source) {
+      const notes = this.app.vault.getMarkdownFiles();
+      if (!notes.length) { new Notice("보관함에 Markdown 노트가 없습니다."); return; }
+      new DocumentPicker(this.app, notes, chosen => this.report(this.importMarkdown(chosen)), "HWPX로 가져올 Markdown 노트 찾기").open();
+      return;
+    }
+    const text = active?.file === source ? active.editor.getValue() : await this.app.vault.read(source);
+    await this.createDocument(source.parent, source.basename, await noteHtml(this.app, source, text));
   }
   pick(recent = false) {
     const vault = this.app.vault;

@@ -1,6 +1,6 @@
-import { studioGzip, wasmGzip } from "hwp-editor:assets";
+import { studioGzip, wasmGzip } from "hangle-editor:assets";
 
-export const decode64 = (value: string): ArrayBuffer => Uint8Array.from(atob(value), ch => ch.charCodeAt(0)).buffer;
+const decode64 = (value: string): ArrayBuffer => Uint8Array.from(atob(value), ch => ch.charCodeAt(0)).buffer;
 async function unpack(value: string) {
   const stream = new Blob([decode64(value)]).stream().pipeThrough(new DecompressionStream("gzip"));
   return new Response(stream).arrayBuffer();
@@ -8,6 +8,42 @@ async function unpack(value: string) {
 let assets: Promise<[string, ArrayBuffer]> | undefined;
 function loadAssets() {
   return assets ??= Promise.all([unpack(studioGzip).then(bytes => new TextDecoder().decode(bytes)), unpack(wasmGzip)]);
+}
+function createFrame(container: HTMLElement) {
+  return container.createEl("iframe", { cls: "hangle-editor-frame", attr: {
+    title: "한글 문서 편집기", sandbox: "allow-scripts allow-modals", referrerpolicy: "no-referrer"
+  } });
+}
+function connect(frame: HTMLIFrameElement, port: MessagePort, studio: string, data: object) {
+  frame.addEventListener("load", () => {
+    // The sandboxed srcdoc has an opaque origin. Further traffic uses its private port.
+    frame.contentWindow?.postMessage(data, "*", [port]);
+  }, { once: true });
+  frame.srcdoc = studio;
+}
+export async function createHwpx(container: HTMLElement, html = ""): Promise<ArrayBuffer> {
+  const [studio, engine] = await loadAssets();
+  const frame = createFrame(container);
+  frame.hidden = true;
+  const { port1, port2 } = new MessageChannel();
+  let timer: number | undefined;
+  try {
+    return await new Promise<ArrayBuffer>((resolve, reject) => {
+      timer = window.setTimeout(() => reject(Error("HWPX 생성 시간이 초과됐습니다.")), 120000);
+      port1.onmessage = ({ data }) => {
+        if (data?.type === "created" && data.bytes instanceof ArrayBuffer && data.bytes.byteLength) {
+          if (data.losses) reject(Error(`문서 변환 중 보존할 수 없는 개체가 ${data.losses}개 있습니다.`));
+          else resolve(data.bytes);
+        } else reject(Error(data?.message || "HWPX를 생성하지 못했습니다."));
+      };
+      connect(frame, port2, studio, { type: "hangle-editor-create", engine, html });
+    });
+  } finally {
+    window.clearTimeout(timer);
+    port1.close();
+    port2.close();
+    frame.remove();
+  }
 }
 export interface Snapshot { bytes: ArrayBuffer; revision: number; losses: number }
 export type EditorEvent = { type: "changed"; revision: number } | { type: "action"; action: string } |
@@ -25,9 +61,7 @@ export class StudioFrame {
   ready = false;
 
   constructor(container: HTMLElement, private onEvent: (event: EditorEvent) => void) {
-    this.iframe = container.createEl("iframe", { cls: "hwp-editor-frame", attr: {
-      title: "한글 문서 편집기", sandbox: "allow-scripts allow-modals", referrerpolicy: "no-referrer"
-    } });
+    this.iframe = createFrame(container);
     this.channel.port1.onmessage = ({ data }) => {
       if (data?.type === "closing") {
         this.closing = data;
@@ -52,13 +86,8 @@ export class StudioFrame {
     this.format = /\.hwpx$/i.test(name) ? "hwpx" : "hwp";
     const [html, engine] = await loadAssets();
     if (this.disposed) return;
-    this.iframe.addEventListener("load", () => {
-      if (this.disposed) return;
-      // A sandboxed srcdoc has an opaque origin. All subsequent traffic uses this private port.
-      this.iframe.contentWindow?.postMessage({ type: "hwp-editor-connect", engine, bytes, name, edited,
-        dark: this.iframe.ownerDocument.body.classList.contains("theme-dark") }, "*", [this.channel.port2]);
-    }, { once: true });
-    this.iframe.srcdoc = html;
+    connect(this.iframe, this.channel.port2, html, { type: "hangle-editor-connect", engine, bytes, name, edited,
+      dark: this.iframe.ownerDocument.body.classList.contains("theme-dark") });
   }
   theme(dark: boolean) { this.channel.port1.postMessage({ type: "theme", dark }); }
   saved(revision: number, message: string) { this.channel.port1.postMessage({ type: "saved", revision, message }); }

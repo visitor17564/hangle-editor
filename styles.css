@@ -1,21 +1,23 @@
-.workspace-leaf-content[data-type="hwp-editor"] .view-content {
+.workspace-leaf-content[data-type="hangle-editor"] .view-content {
   display: flex;
   flex-direction: column;
   padding: 0;
   overflow: hidden;
 }
-.hwp-editor-frame {
+.hangle-editor-frame {
   display: block;
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
   border: 0;
 }
-.hwp-editor-status {
+.hangle-editor-status {
   margin: auto;
   max-width: 40em;
   padding: var(--size-4-4);
   color: var(--text-muted);
   white-space: pre-wrap;
 }
-.hwp-editor-filename { width: 100%; }
+.hangle-editor-filename { width: 100%; }
+.hangle-editor-frame[hidden] { display: none; }
+.side-dock-ribbon-action.hangle-editor-ribbon-off { display: none !important; }

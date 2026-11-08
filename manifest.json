@@ -1,9 +1,9 @@
 {
-  "id": "hwp-editor",
-  "name": "HWP Editor",
-  "version": "0.1.0",
+  "id": "hangle-editor",
+  "name": "Hangle Editor",
+  "version": "0.2.0",
   "minAppVersion": "1.12.4",
-  "description": "Open, edit, and save HWP and HWPX documents in your vault with the HOP editor.",
+  "description": "Create and edit HWPX documents, open HWP files, export to PDF or Markdown, and turn Markdown notes into editable HWPX documents.",
   "author": "visitor17564",
   "authorUrl": "https://github.com/visitor17564",
   "isDesktopOnly": true
