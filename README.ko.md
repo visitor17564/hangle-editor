@@ -64,7 +64,7 @@ npm run build
 - `src/`에 파일 뷰, 명령 팔레트, 리본 설정, 보관함 입출력 코드가 있습니다.
 - `studio/`에서 HOP의 메뉴·도구 모음·편집 캔버스를 연결하고 rhwp 엔진으로 문서를 변환합니다.
 - 릴리스에는 `manifest.json`과 같은 버전의 태그를 붙이고 `main.js`, `manifest.json`, `styles.css`를 첨부합니다. [Obsidian 제출 안내](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin)
-- 0.2.6부터 GitHub Actions가 태그의 소스를 빌드하고 세 파일의 출처를 증명합니다. 내려받은 파일은 `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.2.6`에서 파일명과 태그를 바꿔 검증할 수 있습니다. [빌드 및 서명 워크플로](.github/workflows/attest-release.yml)
+- 0.2.6부터 GitHub Actions가 태그의 소스를 빌드하고 세 파일의 출처를 증명합니다. 내려받은 파일은 `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.2.7`에서 파일명과 태그를 바꿔 검증할 수 있습니다. [빌드 및 서명 워크플로](.github/workflows/attest-release.yml)
 
 ## 원본과 라이선스
 

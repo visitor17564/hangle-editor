@@ -86,7 +86,7 @@ const notices = [
 ].map(file => read(file).replaceAll("*/", "* /")).join("\n\n");
 await build({
   absWorkingDir: root, entryPoints: ["src/main.ts"], outfile: "main.js", bundle: true, format: "cjs",
-  platform: "browser", target: "chrome120", external: ["obsidian", "node:buffer", "node:zlib"], minify: true,
+  platform: "browser", target: "chrome120", external: ["obsidian", "node:zlib"], minify: true,
   banner: { js: "/*! Hangle Editor / HOP / rhwp and bundled dependencies\n" + notices + "\n*/" },
   plugins: [{ name: "editor-assets", setup(b) {
     b.onResolve({ filter: /^hangle-editor:assets$/ }, () => ({ path: "assets", namespace: "hwp" }));

@@ -41,7 +41,7 @@ Opening the document picker lists vault file paths so you can find HWP and HWPX 
 
 Run `npm ci`, `npm run lint`, and `npm run build` with Node.js 22 or later and Git. The build fetches pinned HOP and rhwp revisions. Set `HWP_EDITOR_CACHE` to choose the checkout directory. It embeds the editor and document engine in `main.js` and checks that the finished file is under 5,000,000 bytes.
 
-Starting with 0.2.6, GitHub Actions builds the tagged source and signs the digests of the three installation files. To verify a downloaded file, run `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.2.6`, substituting the file and release tag you downloaded. [Release workflow](.github/workflows/attest-release.yml)
+Starting with 0.2.6, GitHub Actions builds the tagged source and signs the digests of the three installation files. To verify a downloaded file, run `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.2.7`, substituting the file and release tag you downloaded. [Release workflow](.github/workflows/attest-release.yml)
 
 ## Credits and licenses
 

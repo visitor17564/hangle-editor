@@ -1,6 +1,6 @@
 {
   "name": "hangle-editor",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "private": true,
   "description": "HOP's HWP and HWPX editor for Obsidian vaults.",
   "license": "MIT",

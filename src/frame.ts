@@ -1,4 +1,3 @@
-import { Buffer } from "node:buffer";
 import { brotliDecompress } from "node:zlib";
 import { studioBrotli, wasmBrotli } from "hangle-editor:assets";
 import { isRecord } from "./guards";
@@ -8,12 +7,32 @@ type DesktopWindow = Window & {
   require?(id: "electron"): { remote: { getCurrentWebContents(): NativeEditCommands } };
 };
 
+type BrotliDecoder = (input: Uint8Array, done: (error: unknown, output: unknown) => void) => void;
+
+function isBrotliDecoder(value: unknown): value is BrotliDecoder {
+  return typeof value === "function";
+}
+
 function unpack(value: string): Promise<ArrayBuffer> {
-  // The desktop host supplies Brotli. The sandboxed editor receives only the decoded bytes.
-  return new Promise((resolve, reject) => brotliDecompress(Buffer.from(value, "base64"), (error, bytes) => {
-    if (error) reject(error);
-    else resolve(Uint8Array.from(bytes).buffer);
-  }));
+  // Brotli is supplied by desktop Obsidian's Node runtime, outside the editor iframe.
+  const decoder: unknown = brotliDecompress;
+  return new Promise((resolve, reject) => {
+    if (!isBrotliDecoder(decoder)) {
+      reject(new Error("편집기 압축을 해제할 수 없습니다."));
+      return;
+    }
+    const binary = atob(value);
+    const compressed = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) compressed[i] = binary.charCodeAt(i);
+    decoder(compressed, (error, output) => {
+      if (error != null || !ArrayBuffer.isView(output) || output.byteLength === 0) {
+        reject(error instanceof Error ? error : new Error("편집기 압축 데이터가 올바르지 않습니다."));
+        return;
+      }
+      const bytes = new Uint8Array(output.buffer, output.byteOffset, output.byteLength);
+      resolve(bytes.slice().buffer);
+    });
+  });
 }
 let assets: Promise<[string, ArrayBuffer]> | undefined;
 function loadAssets() {
