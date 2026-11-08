@@ -1,26 +1,29 @@
 import { EditableFileView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import type HwpEditor from "./main";
-import { availablePath, choosePath, formatOf, targetFor, validName, type WriteTarget } from "./files";
-import { StudioFrame, type EditorEvent } from "./frame";
+import { availablePath, choosePath, formatOf, targetFor, UnsavedDialog, validName, type WriteTarget } from "./files";
+import { StudioFrame, type EditorEvent, type Snapshot } from "./frame";
 
 export const VIEW_TYPE = "hwp-editor";
+export interface Draft { target: WriteTarget; snapshot: Snapshot; }
 
 class DocumentSession {
   private frame: StudioFrame;
   private status: HTMLElement;
+  private revision = 0;
   private storedRevision = 0;
-  private timer?: number;
   private pending: Promise<unknown> = Promise.resolve();
   private closing?: Promise<void>;
   private stopping = false;
   readonly target: WriteTarget;
   get ready() { return this.frame.ready && !this.stopping; }
+  get dirty() { return this.revision > this.storedRevision; }
 
-  constructor(private plugin: HwpEditor, container: HTMLElement, file: TFile, bytes: ArrayBuffer) {
-    this.target = targetFor(file, bytes);
+  constructor(private plugin: HwpEditor, container: HTMLElement, file: TFile, bytes: ArrayBuffer,
+      private showCopy: (file: TFile) => Promise<void>, draft?: Draft) {
+    this.target = draft?.target ?? targetFor(file, bytes);
     this.status = container.createDiv({ cls: "hwp-editor-status", text: "한글 문서를 여는 중…" });
     this.frame = new StudioFrame(container, e => this.receive(e));
-    void this.frame.load(bytes, file.name).catch(error => this.fail(String(error)));
+    void this.frame.load(bytes, file.name, !!draft).catch(error => this.fail(String(error)));
   }
   theme(dark: boolean) { this.frame.theme(dark); }
   private fail(message: string) {
@@ -34,8 +37,7 @@ class DocumentSession {
     if (event.type === "ready") { this.status.hidden = true; return; }
     if (this.stopping) return;
     if (event.type === "changed") {
-      window.clearTimeout(this.timer);
-      this.timer = window.setTimeout(() => this.plugin.report(this.enqueue(() => this.save())), 1000);
+      this.revision = event.revision;
     } else if (event.type === "action") {
       this.plugin.report(this.action(event.action));
     } else if (event.type === "import") {
@@ -54,10 +56,13 @@ class DocumentSession {
     this.pending = job.catch(() => {});
     return job;
   }
-  private async save(closing = false) {
-    const { file } = this.target;
-    const snapshot = await this.frame.snapshot(formatOf(file), this.storedRevision);
+  private async save() {
+    const snapshot = await this.frame.snapshot(formatOf(this.target.file), this.storedRevision);
     if (snapshot.revision <= this.storedRevision) return;
+    await this.persist(snapshot);
+  }
+  private async persist(snapshot: Snapshot, closing = false) {
+    const { file } = this.target;
     if (!snapshot.bytes.byteLength) throw Error("편집 내용을 읽지 못했습니다.");
     let message;
     try {
@@ -96,21 +101,30 @@ class DocumentSession {
     const initial = availablePath(app.vault, file.parent, pdf ? file.basename : file.basename + " (사본)", extension).split("/").pop()!;
     const path = await choosePath(app, file.parent, initial, pdf);
     if (!path || !this.ready) return;
-    await this.enqueue(async () => {
+    const copy = await this.enqueue(async () => {
       const snapshot = await this.frame.snapshot(pdf ? "pdf" : /\.hwpx$/i.test(path) ? "hwpx" : "hwp");
       const copy = await app.vault.createBinary(path, snapshot.bytes);
       const loss = snapshot.losses ? ` · 일부 개체 ${snapshot.losses}건을 보존하지 못했습니다.` : "";
       new Notice("저장됨 · " + path + loss, snapshot.losses ? 10000 : 4000);
-      if (!pdf) await this.plugin.open(copy);
+      if (!pdf) {
+        this.storedRevision = snapshot.revision;
+        this.frame.saved(snapshot.revision, "저장됨 · " + path);
+      }
+      return copy;
     });
+    if (!pdf && !this.stopping) await this.showCopy(copy);
   }
   close(): Promise<void> {
     if (this.closing) return this.closing;
     this.stopping = true;
-    window.clearTimeout(this.timer);
     this.closing = this.enqueue(async () => {
       // Probe even if the change notification is still queued behind a tab close.
-      if (this.frame.ready) await this.save(true);
+      if (!this.frame.ready) return;
+      const snapshot = await this.frame.snapshot(formatOf(this.target.file), this.storedRevision);
+      if (snapshot.revision <= this.storedRevision) return;
+      const choice = await new UnsavedDialog(this.plugin.app, this.target.file.path).ask();
+      if (choice === "save") await this.persist(snapshot, true);
+      if (choice === "keep") await this.plugin.resume({ target: this.target, snapshot });
     }).catch(error => {
       new Notice(`한글 문서 저장 실패 (${this.target.original.path})\n${String(error)}`, 0);
     }).finally(() => { this.frame.dispose(); this.status.remove(); });
@@ -130,6 +144,9 @@ export class HwpView extends EditableFileView {
   protected async onOpen() {
     this.registerEvent(this.app.workspace.on("css-change", () =>
       this.session?.theme(this.containerEl.ownerDocument.body.classList.contains("theme-dark"))));
+    this.registerDomEvent(this.containerEl.win, "beforeunload", event => {
+      if (this.session?.dirty) { event.preventDefault(); event.returnValue = false; }
+    });
   }
   async onLoadFile(file: TFile) {
     const token = ++this.generation;
@@ -137,8 +154,10 @@ export class HwpView extends EditableFileView {
     if (token !== this.generation) return;
     this.contentEl.empty();
     try {
-      const bytes = await this.app.vault.readBinary(file);
-      if (token === this.generation) this.session = new DocumentSession(this.plugin, this.contentEl, file, bytes);
+      const draft = this.plugin.takeDraft(this.leaf, file);
+      const bytes = draft?.snapshot.bytes ?? await this.app.vault.readBinary(file);
+      if (token === this.generation) this.session = new DocumentSession(
+        this.plugin, this.contentEl, file, bytes, copy => this.leaf.openFile(copy), draft);
     } catch (error) {
       if (token === this.generation) this.contentEl.createDiv({ cls: "hwp-editor-status", text: "파일 읽기 실패 · " + String(error) });
     }

@@ -48,14 +48,14 @@ export class StudioFrame {
       }
     };
   }
-  async load(bytes: ArrayBuffer, name: string) {
+  async load(bytes: ArrayBuffer, name: string, edited = false) {
     this.format = /\.hwpx$/i.test(name) ? "hwpx" : "hwp";
     const [html, engine] = await loadAssets();
     if (this.disposed) return;
     this.iframe.addEventListener("load", () => {
       if (this.disposed) return;
       // A sandboxed srcdoc has an opaque origin. All subsequent traffic uses this private port.
-      this.iframe.contentWindow?.postMessage({ type: "hwp-editor-connect", engine, bytes, name,
+      this.iframe.contentWindow?.postMessage({ type: "hwp-editor-connect", engine, bytes, name, edited,
         dark: this.iframe.ownerDocument.body.classList.contains("theme-dark") }, "*", [this.channel.port2]);
     }, { once: true });
     this.iframe.srcdoc = html;

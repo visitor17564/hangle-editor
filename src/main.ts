@@ -1,11 +1,12 @@
-import { Notice, Plugin, TFile, TFolder } from "obsidian";
+import { Notice, Plugin, TFile, TFolder, WorkspaceLeaf } from "obsidian";
 import { blankHwp } from "hwp-editor:assets";
 import { decode64 } from "./frame";
 import { availablePath, DocumentPicker, supported, VaultWriter } from "./files";
-import { HwpView, VIEW_TYPE } from "./view";
+import { HwpView, VIEW_TYPE, type Draft } from "./view";
 
 export default class HwpEditor extends Plugin {
   writer!: VaultWriter;
+  private drafts = new WeakMap<WorkspaceLeaf, Draft>();
   onload() {
     this.writer = new VaultWriter(this.app.vault);
     this.registerView(VIEW_TYPE, leaf => new HwpView(leaf, this));
@@ -30,6 +31,24 @@ export default class HwpEditor extends Plugin {
     void promise.catch(error => new Notice(error instanceof Error ? error.message : String(error), 10000));
   }
   async open(file: TFile) { await this.app.workspace.getLeaf("tab").openFile(file); }
+  async resume(draft: Draft) {
+    const { target, snapshot } = draft;
+    if (snapshot.losses > 0) target.protectOriginal = true;
+    if (this.app.vault.getAbstractFileByPath(target.original.path) !== target.original) {
+      const message = await this.writer.write(target, snapshot.bytes, snapshot.losses);
+      if (message) new Notice(message, 10000);
+      await this.open(target.file);
+      return;
+    }
+    const leaf = this.app.workspace.getLeaf("tab");
+    this.drafts.set(leaf, draft);
+    await leaf.openFile(target.original);
+  }
+  takeDraft(leaf: WorkspaceLeaf, file: TFile): Draft | undefined {
+    const draft = this.drafts.get(leaf);
+    this.drafts.delete(leaf);
+    return draft?.target.original === file ? draft : undefined;
+  }
   async newDocument(folder = this.app.fileManager.getNewFileParent(this.app.workspace.getActiveFile()?.path ?? "")) {
     const path = availablePath(this.app.vault, folder, "새 한글 문서", "hwp");
     await this.open(await this.app.vault.createBinary(path, decode64(blankHwp)));

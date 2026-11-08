@@ -30,6 +30,22 @@ export class DocumentPicker extends FuzzySuggestModal<TFile> {
   getItemText(file: TFile) { return file.path; }
   onChooseItem(file: TFile) { this.choose(file); }
 }
+type CloseChoice = "save" | "discard" | "keep";
+export class UnsavedDialog extends Modal {
+  private finish: (choice: CloseChoice) => void = () => {};
+  constructor(app: App, private filename: string) { super(app); }
+  ask(): Promise<CloseChoice> { return new Promise(resolve => { this.finish = resolve; this.open(); }); }
+  onOpen() {
+    this.setTitle("변경 사항을 저장할까요?");
+    this.contentEl.createEl("p", { text: this.filename });
+    const choose = (choice: CloseChoice) => { this.finish(choice); this.close(); };
+    new Setting(this.contentEl)
+      .addButton(b => b.setButtonText("버리기").onClick(() => choose("discard")))
+      .addButton(b => b.setButtonText("계속 편집").onClick(() => choose("keep")))
+      .addButton(b => b.setButtonText("저장").setCta().onClick(() => choose("save")));
+  }
+  onClose() { this.finish("keep"); this.contentEl.empty(); }
+}
 export class FileNameDialog extends Modal {
   private finish: (name: string | null) => void = () => {};
   constructor(app: App, private heading: string, private initial: string, private accept: (name: string) => string | null) { super(app); }

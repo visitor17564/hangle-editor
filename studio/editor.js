@@ -198,6 +198,7 @@ async function connect(event) {
       } catch (error) { send({ type: "error", message: String(error) }); }
     }, { once: true });
     send({ type: "ready", pages: wasm.pageCount });
+    if (event.data.edited) dirty();
   } catch (error) {
     send({ type: "failed", message: error.message ?? String(error) });
   }
