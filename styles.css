@@ -20,4 +20,4 @@
 }
 .hangle-editor-filename { width: 100%; }
 .hangle-editor-frame[hidden] { display: none; }
-.side-dock-ribbon-action.hangle-editor-ribbon-off { display: none !important; }
+.workspace-ribbon .side-dock-ribbon-action.hangle-editor-ribbon-off { display: none; }
