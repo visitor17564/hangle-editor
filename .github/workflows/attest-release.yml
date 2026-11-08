@@ -1,14 +1,16 @@
 name: Build and attest release files
 
 on:
+  workflow_dispatch:
   push:
-    tags: ['[0-9]+.[0-9]+.[0-9]+']
+    tags: ['*']
 
 permissions:
   contents: read
 
 jobs:
   attest:
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
       contents: read
