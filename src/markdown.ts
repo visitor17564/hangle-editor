@@ -20,8 +20,11 @@ async function imageData(app: App, file: TFile, mime: string): Promise<string> {
   const bytes = await app.vault.readBinary(file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(Error("첨부 이미지를 데이터 URL로 변환하지 못했습니다."));
+    };
+    reader.onerror = () => reject(Error(reader.error?.message ?? "첨부 이미지를 읽지 못했습니다."));
     reader.readAsDataURL(new Blob([bytes], { type: mime }));
   });
 }
@@ -29,8 +32,10 @@ async function imageData(app: App, file: TFile, mime: string): Promise<string> {
 export async function noteHtml(app: App, file: TFile, text: string): Promise<string> {
   const images = new Map<string, Promise<string>>();
   const parser = new Marked({ gfm: true, async: true, extensions: [wikiLinks], walkTokens: async token => {
-    if (token.type !== "image" || /^(?:[a-z][\w+.-]*:|\/\/)/i.test(token.href)) return;
-    let path = token.href;
+    if (token.type !== "image") return;
+    const href: unknown = token.href; // Marked also passes extension tokens with arbitrary fields.
+    if (typeof href !== "string" || /^(?:[a-z][\w+.-]*:|\/\/)/i.test(href)) return;
+    let path = href;
     try { path = decodeURIComponent(path); } catch { /* Literal percent in a filename. */ }
     const asset = app.metadataCache.getFirstLinkpathDest(path, file.path);
     const mime = asset && imageTypes[asset.extension.toLowerCase()];

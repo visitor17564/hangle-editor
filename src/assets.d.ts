@@ -1,4 +1,4 @@
 declare module "hangle-editor:assets" {
-  export const studioGzip: string;
-  export const wasmGzip: string;
+  export const studioBrotli: string;
+  export const wasmBrotli: string;
 }

@@ -18,6 +18,8 @@ Click an HWP or HWPX file in your vault to edit it in a tab. Use the ribbon icon
 
 New documents go to the vault root unless you choose a folder under **Settings → Hangle Editor**. The separate attachment command follows **Files & Links → Default location for new attachments**, relative to the active file where applicable.
 
+Open Obsidian’s **Command palette** with **Ctrl+P** (**Cmd+P** on macOS), type `Hangle Editor`, and press **Enter** on a command. To export, first open an HWP or HWPX file; save and export commands appear when its editor is ready.
+
 ## 시작하기
 
 1. GitHub 릴리스에서 `main.js`, `manifest.json`, `styles.css`를 받습니다. [릴리스](https://github.com/visitor17564/hangle-editor/releases/latest)
@@ -28,7 +30,11 @@ New documents go to the vault root unless you choose a folder under **Settings �
 
 ## 명령 팔레트와 리본
 
-**Ctrl+P**(macOS에서는 **Cmd+P**)로 Obsidian 명령 팔레트를 열고 `Hangle Editor`를 검색하세요. 왼쪽 리본의 한글 문서 아이콘을 클릭하면 새 HWPX 파일을 만듭니다. 아이콘은 **설정 → Hangle Editor → 새 한글 문서 리본 아이콘**에서 켜고 끌 수 있습니다.
+명령 팔레트는 Obsidian 안에서 기능을 이름으로 찾아 실행하는 창입니다. **Ctrl+P**(macOS: **Cmd+P**)를 누르고 `Hangle Editor` 또는 `HWPX`처럼 원하는 명령 이름의 일부를 입력하세요. 화살표 키로 고른 뒤 **Enter**를 누르거나 결과를 클릭하면 실행됩니다. **Esc**로 닫을 수 있습니다.
+
+예를 들어 회의 노트를 열어 둔 상태에서 `첨부파일 위치`를 검색하고 **첨부파일 위치에 새 HWPX 만들기**를 선택하면, 그 노트를 기준으로 Obsidian의 첨부파일 설정에 맞춰 문서가 생깁니다. PDF가 필요하면 먼저 한글 문서를 연 뒤 `PDF 내보내기`를 실행하세요. **저장·다른 이름으로 저장·내보내기는 현재 한글 편집 탭이 준비된 뒤에만** 팔레트에 표시됩니다.
+
+자주 쓰는 명령은 **설정 → 단축키**에서 `Hangle Editor`를 검색해 키를 지정할 수 있습니다. 왼쪽 리본의 한글 문서 아이콘은 **새 한글 문서 만들기 (HWPX)**와 같은 기능이며, **설정 → Hangle Editor → 새 한글 문서 리본 아이콘**에서 켜고 끌 수 있습니다.
 
 | 명령 팔레트 | 사용 방법 |
 | --- | --- |
@@ -56,10 +62,11 @@ Node.js 22 이상과 Git이 필요합니다.
 
 ```sh
 npm ci
+npm run lint
 npm run build
 ```
 
-첫 빌드는 아래 두 Git 커밋에서 브라우저 편집에 필요한 소스를 가져옵니다. `HWP_EDITOR_CACHE`로 원본 캐시 위치를 지정할 수 있습니다. 빌드가 끝나면 저장소 루트에 `main.js`가 생성됩니다.
+첫 빌드는 아래 두 Git 커밋에서 브라우저 편집에 필요한 소스를 가져옵니다. `HWP_EDITOR_CACHE`로 원본 캐시 위치를 지정할 수 있습니다. 빌드는 편집 화면과 rhwp 엔진을 Brotli로 압축해 `main.js`에 포함하고, 최종 파일이 5,000,000바이트 이상이면 실패합니다. 설치 후에는 엔진을 따로 다운로드하지 않습니다.
 
 - `src/`에 파일 뷰, 명령 팔레트, 리본 설정, 보관함 입출력 코드가 있습니다.
 - `studio/`에서 HOP의 메뉴·도구 모음·편집 캔버스를 연결하고 rhwp 엔진으로 문서를 변환합니다.

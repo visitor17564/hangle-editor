@@ -9,7 +9,7 @@ function sibling(folder: TFolder | null, name: string): string {
   return normalizePath(folder && !folder.isRoot() ? folder.path + "/" + name : name);
 }
 export function validName(name: string): boolean {
-  return !!name && !/[<>:"/\\|?*\u0000-\u001f]/.test(name) && !/[. ]$/.test(name) &&
+  return !!name && !/[<>:"/\\|?*]/.test(name) && !Array.from(name).some(ch => ch.charCodeAt(0) < 32) && !/[. ]$/.test(name) &&
     !name.startsWith(".") && !/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(name);
 }
 export function availablePath(vault: Vault, folder: TFolder | null, base: string, extension: string): string {

@@ -2,7 +2,7 @@ import { build } from "esbuild";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { gzipSync } from "node:zlib";
+import { brotliCompressSync, constants } from "node:zlib";
 import { hop, rhwp } from "./upstream.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -11,10 +11,8 @@ const upstream = path.join(rhwp, "rhwp-studio/src");
 const core = path.join(host, "vendor/rhwp-core");
 const local = path.join(root, "studio");
 const read = file => readFileSync(file, "utf8").replace(/\r\n/g, "\n");
-function gzip64(data) {
-  const bytes = gzipSync(data, { level: 9 });
-  bytes[9] = 255; // Use the same gzip OS field on every build platform.
-  return bytes.toString("base64");
+function brotli64(data) {
+  return brotliCompressSync(data, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } }).toString("base64");
 }
 const wasm = readFileSync(path.join(core, "rhwp_bg.wasm"));
 const provenance = JSON.parse(read(path.join(core, "PROVENANCE.json")));
@@ -76,7 +74,7 @@ const html = template.replace(/<link rel="icon"[^>]*>/, () => `<meta http-equiv=
   .replace('<script type="module" src="/src/main.ts"></script>', () => `<script>${escapedJs}</script>`);
 if (!html.includes(csp) || html.includes('src="/src/main.ts"')) throw Error("Unknown HOP editor template");
 const payload = {
-  studioGzip: gzip64(html), wasmGzip: gzip64(wasm)
+  studioBrotli: brotli64(html), wasmBrotli: brotli64(wasm)
 };
 
 const notices = [
@@ -88,10 +86,14 @@ const notices = [
 ].map(file => read(file).replaceAll("*/", "* /")).join("\n\n");
 await build({
   absWorkingDir: root, entryPoints: ["src/main.ts"], outfile: "main.js", bundle: true, format: "cjs",
-  platform: "browser", target: "chrome120", external: ["obsidian"], minify: true,
+  platform: "browser", target: "chrome120", external: ["obsidian", "node:buffer", "node:zlib"], minify: true,
   banner: { js: "/*! Hangle Editor / HOP / rhwp and bundled dependencies\n" + notices + "\n*/" },
   plugins: [{ name: "editor-assets", setup(b) {
     b.onResolve({ filter: /^hangle-editor:assets$/ }, () => ({ path: "assets", namespace: "hwp" }));
     b.onLoad({ filter: /.*/, namespace: "hwp" }, () => ({ contents: Object.entries(payload).map(([k,v]) => `export const ${k}=${JSON.stringify(v)}`).join("\n") }));
   }}]
 });
+// Budget the actual release file (including base64 and license notices) for Sync Standard.
+const releaseBytes = readFileSync(path.join(root, "main.js")).byteLength;
+if (releaseBytes >= 5_000_000) throw Error(`main.js is too large for Sync Standard: ${releaseBytes} bytes`);
+console.log(`main.js: ${releaseBytes.toLocaleString("en-US")} / 5,000,000 bytes`);

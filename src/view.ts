@@ -75,15 +75,14 @@ class DocumentSession {
     } catch (error) {
       if (!closing) throw error;
       // Keep the captured bytes accessible even if the vault becomes read-only on close.
-      const fragment = this.status.ownerDocument.createDocumentFragment();
+      const fragment = createFragment();
       fragment.createDiv({ text: `보관함에 저장하지 못했습니다. ${String(error)}` });
       const button = fragment.createEl("button", { text: "편집본 내려받기" });
+      const link = fragment.createEl("a", { attr: { download: file.name, hidden: "" } });
       const notice = new Notice(fragment, 0);
       button.addEventListener("click", () => {
         const url = URL.createObjectURL(new Blob([snapshot.bytes], { type: "application/octet-stream" }));
-        const link = button.ownerDocument.createElement("a");
         link.href = url;
-        link.download = file.name;
         link.click();
         window.setTimeout(() => URL.revokeObjectURL(url), 30000);
         notice.hide();
@@ -160,7 +159,7 @@ export class HwpView extends EditableFileView {
     this.registerEvent(this.app.workspace.on("css-change", () =>
       this.session?.theme(this.containerEl.ownerDocument.body.classList.contains("theme-dark"))));
     this.registerDomEvent(this.containerEl.win, "beforeunload", event => {
-      if (this.session?.dirty) { event.preventDefault(); event.returnValue = false; }
+      if (this.session?.dirty) event.preventDefault();
     });
   }
   async onLoadFile(file: TFile) {

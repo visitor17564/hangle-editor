@@ -4,6 +4,7 @@ import { availablePath, DocumentPicker, supported, VaultWriter } from "./files";
 import { HwpView, VIEW_TYPE, type Draft } from "./view";
 import { noteHtml } from "./markdown";
 import { HangleSettings, NEW_ICON, NEW_ICON_SVG } from "./settings";
+import { isRecord } from "./guards";
 
 const NEW_BASENAME = "새 한글 문서";
 
@@ -13,10 +14,11 @@ export default class HangleEditor extends Plugin {
   settings = { showRibbon: true, newDocumentFolder: "" };
   private ribbon?: HTMLElement;
   async onload() {
-    const data = await this.loadData();
+    const saved: unknown = await this.loadData();
+    const data = isRecord(saved) ? saved : {};
     this.settings = {
-      showRibbon: data?.showRibbon !== false,
-      newDocumentFolder: typeof data?.newDocumentFolder === "string" ? data.newDocumentFolder : ""
+      showRibbon: data.showRibbon !== false,
+      newDocumentFolder: typeof data.newDocumentFolder === "string" ? data.newDocumentFolder : ""
     };
     this.writer = new VaultWriter(this.app.vault);
     addIcon(NEW_ICON, NEW_ICON_SVG);

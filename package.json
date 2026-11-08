@@ -1,10 +1,11 @@
 {
   "name": "hangle-editor",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "HOP's HWP and HWPX editor for Obsidian vaults.",
   "license": "MIT",
   "scripts": {
+    "lint": "eslint . --max-warnings 0",
     "build": "tsc --noEmit && node scripts/build.mjs"
   },
   "engines": {
@@ -12,12 +13,16 @@
   },
   "devDependencies": {
     "@noble/hashes": "2.4.0",
+    "@types/node": "22.20.5",
     "esbuild": "0.28.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-obsidianmd": "0.5.1",
     "fflate": "0.8.2",
     "lucide-static": "1.70.0",
     "marked": "18.1.3",
     "obsidian": "1.14.4",
     "pdf-lib": "1.17.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1"
   }
 }

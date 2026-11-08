@@ -112,9 +112,7 @@ export function documentHtml(engine) {
 export function importMarkdownHtml(engine, html) {
   engine.createNewDocument();
   if (!html.trim()) return;
-  const template = document.createElement("template");
-  template.innerHTML = html;
-  const root = template.content;
+  const root = new DOMParser().parseFromString(html, "text/html").body;
   root.querySelectorAll("script,style,iframe,object,embed,svg,link,base,meta").forEach(n => n.remove());
   root.querySelectorAll("input[type=checkbox]").forEach(n => n.replaceWith(n.checked ? "[x] " : "[ ] "));
   for (const img of root.querySelectorAll("img")) {
