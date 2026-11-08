@@ -48,7 +48,7 @@ const editorImports = {
 };
 
 const editor = await build({
-  absWorkingDir: root, entryPoints: { editor: "studio/editor.js", theme: path.join(host, "src/style.css") },
+  absWorkingDir: root, entryPoints: { editor: "studio/editor.js", theme: "studio/style.css" },
   outdir: "build", write: false, bundle: true, format: "iife", target: "chrome120", minify: true,
   nodePaths: [path.join(root, "node_modules")], loader: { ".svg": "dataurl" }, plugins: [editorImports],
   external: ["@tauri-apps/api/core"], // Tree-shaken native platform detector.

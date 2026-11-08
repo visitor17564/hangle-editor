@@ -1,0 +1,7 @@
+@import "@hop/style.css";
+
+/* The popup is a child of the combo. Its value label handles long font names. */
+#style-bar .custom-select[data-select-id="font-name"] {
+  overflow: visible;
+  max-width: 100%;
+}
