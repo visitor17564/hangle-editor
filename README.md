@@ -1,8 +1,20 @@
 # Hangle Editor
 
-Create and edit HWPX documents in Obsidian. Open existing HWP files, export the current document to PDF or Markdown, and turn a Markdown note into an editable HWPX file.
+rhwp와 HOP를 보고, 제가 자주 쓰는 한글 문서 편집 기능을 제 개인 지식 체계인 Obsidian 안으로 가져오고 싶었습니다. 문서 하나를 열거나 고칠 때마다 용량이 큰 오피스 프로그램을 따로 설치하는 부담을 줄이고, 한글 문서와 관련 노트를 같은 보관함에서 다루고 싶었습니다.
 
-보관함에서 한글 파일을 클릭하면 HOP 편집기가 탭으로 열립니다. 새 문서의 기본 형식은 **HWPX**입니다. 편집과 변환은 데스크톱 Obsidian 안에서 오프라인으로 동작합니다.
+이 편집기의 출발점은 두 프로젝트입니다. Edward Kim의 **rhwp**가 HWP·HWPX를 읽고 쓰는 엔진을 제공하고, 그 위에 만든 **HOP**가 메뉴와 도구 모음을 갖춘 편집 화면을 제공합니다. 두 프로젝트를 공개해 주신 개발자와 기여자들께 감사드립니다. [rhwp](https://github.com/edwardkim/rhwp) · [HOP](https://github.com/golbin/hop)
+
+Hangle Editor에서는 이 편집기를 보관함 탭에 연결하고, 명령 팔레트와 리본에서 새 HWPX 만들기, PDF·Markdown 내보내기, Markdown에서 HWPX 만들기를 추가했습니다. 두 원작의 편집 동작을 기준으로 메뉴의 오려두기·복사·붙여넣기, 표 크기 조절, 단어·문단 선택이 데스크톱 Obsidian에서도 작동하는지 점검하고 수정했습니다.
+
+Seeing rhwp and HOP made me want to bring the Hangul editing tools I use into Obsidian, where I keep my personal knowledge. I wanted to open a Korean document alongside my notes without installing a full office suite. rhwp supplies the document engine, and HOP supplies the editor interface.
+
+## Installation
+
+Download `main.js`, `manifest.json`, and `styles.css` from a GitHub release. Put the three files in `.obsidian/plugins/hangle-editor/` inside your vault, reopen desktop Obsidian, and enable **Hangle Editor** in **Settings → Community plugins**. [GitHub releases](https://github.com/visitor17564/hangle-editor/releases)
+
+## Usage
+
+Click an HWP or HWPX file in your vault to edit it in a tab. Use the ribbon icon or the **Hangle Editor** commands in the command palette to create a new HWPX document. Save with **Ctrl+S** (**Cmd+S** on macOS). The **File** menu also lets you export to PDF or Markdown and turn a Markdown note into an editable HWPX document. Editing and conversion work offline.
 
 ## 시작하기
 
@@ -54,6 +66,10 @@ npm run build
 
 HOP 0.4.5의 편집 화면과 rhwp 0.8.7의 문서 엔진을 사용합니다. Markdown을 읽을 때는 Marked를, HWPX의 본문 구조를 읽을 때는 fflate를 사용합니다. [HOP](https://github.com/golbin/hop/tree/80888af2b8c8a18aea16f824d2d92309a290b1ad) · [rhwp](https://github.com/edwardkim/rhwp/tree/1a76570e833917d15817415a53c09ad61ab3203f)
 
-플러그인 소스는 MIT 라이선스로 배포합니다. 번들에는 편집기 및 의존성의 저작권 고지를 포함합니다. [플러그인 라이선스](LICENSE) · [HOP·rhwp 라이선스](licenses/HOP-and-rhwp.txt) · [rhwp 의존성 고지](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/THIRD_PARTY_LICENSES.md)
+이 저장소에서 작성한 플러그인 코드는 MIT 라이선스로 배포합니다. 사용하는 HOP와 rhwp 커밋도 MIT이며, 두 원본의 저작권·허가 고지와 rhwp의 제3자 고지를 보존합니다. [플러그인 라이선스](LICENSE) · [HOP·rhwp 라이선스](licenses/HOP-and-rhwp.txt) · [rhwp 의존성 고지](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/THIRD_PARTY_LICENSES.md)
+
+0.2.2에 포함된 rhwp 엔진은 한글 인코딩 변환에 `encoding_rs` 0.8.42를 사용합니다. 소스에 대한 MIT 고지와 WHATWG 문자표에 대한 BSD 3-Clause 고지는 여기에서 읽을 수 있습니다. [encoding_rs 저작권 및 사용 조건](licenses/encoding_rs-0.8.42.txt)
+
+0.2.2의 도구 모음에는 상위 프로젝트의 밝은 테마와 어두운 테마용 SVG 아이콘이 들어 있습니다. rhwp 작업 기록에는 한컴 웹기안기의 아이콘을 복사한 뒤 어두운 테마용 색상을 만들었다고 나옵니다. 현재 확인한 자료로는 이 두 이미지의 재배포 허락을 확인할 수 없습니다. [원본 아이콘 도입 기록](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/mydocs/working/archives/task_52_step_report.md#L124-L128) · [어두운 테마 아이콘 제작 기록](https://github.com/edwardkim/rhwp/blob/1a76570e833917d15817415a53c09ad61ab3203f/mydocs/working/archives/task_m100_1158_stage5.md)
 
 본 제품은 한글과컴퓨터의 한글 문서 파일(.hwp) 공개 문서를 참고하여 개발하였습니다.

@@ -75,6 +75,7 @@ const payload = {
 
 const notices = [
   path.join(root, "LICENSE"), path.join(hop, "LICENSE"), path.join(rhwp, "THIRD_PARTY_LICENSES.md"),
+  path.join(root, "licenses/encoding_rs-0.8.42.txt"),
   ...["@noble/hashes/LICENSE", "pdf-lib/LICENSE.md", "@pdf-lib/standard-fonts/LICENSE.md",
     "@pdf-lib/upng/LICENSE", "pako/LICENSE", "tslib/LICENSE.txt", "tslib/CopyrightNotice.txt",
     "marked/LICENSE", "fflate/LICENSE"].map(f => path.join(root, "node_modules", f))

@@ -3,7 +3,7 @@
   "name": "Hangle Editor",
   "version": "0.2.2",
   "minAppVersion": "1.12.4",
-  "description": "Create and edit HWPX documents, open HWP files, export to PDF or Markdown, and turn Markdown notes into editable HWPX documents.",
+  "description": "Bring lightweight HWPX editing to your personal knowledge vault with rhwp and HOP. Open HWP files, export to PDF or Markdown, and turn Markdown notes into HWPX documents.",
   "author": "visitor17564",
   "authorUrl": "https://github.com/visitor17564",
   "isDesktopOnly": true
