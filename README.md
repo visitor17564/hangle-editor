@@ -1,4 +1,5 @@
 # Hangle Editor
+<img width="1121" height="689" alt="image" src="https://github.com/user-attachments/assets/19867c28-1729-47f5-8ffc-ae6446937946" />
 
 I built Hangle Editor after seeing rhwp and HOP because I wanted to edit Korean Hangul documents alongside the notes in my personal knowledge vault. Opening a document, changing a table, or exporting a PDF should be possible in Obsidian without installing a full office suite. [한국어 사용 안내](README.ko.md)
 
@@ -27,6 +28,7 @@ Enable Hangle Editor in the Obsidian vault you want to host the editor. Download
 Right-click a `.hwpx` file, choose **Open with → Choose another app → Hangle Editor → Always**, and repeat for `.hwp` if desired. Double-clicking a document now opens its original disk file in an Obsidian editor tab. You can use **Open with** for individual files while keeping another default application. To remove the registration, run `.\Register-HangleEditor.ps1 -Unregister`.
 
 ## Command palette
+<img width="1244" height="662" alt="image" src="https://github.com/user-attachments/assets/8fa513e2-095a-4250-91a8-9bf7886fbc6c" />
 
 Press **Ctrl+P** (**Cmd+P** on macOS), type `Hangle Editor`, and press **Enter** on a result. Commands currently appear in Korean. You can assign shortcuts under **Settings → Hotkeys**.
 
@@ -44,6 +46,7 @@ Press **Ctrl+P** (**Cmd+P** on macOS), type `Hangle Editor`, and press **Enter**
 Save and export commands appear when the active HWP or HWPX editor is ready. The editor’s **File** menu also offers Save As, conversion, export, and print. Markdown conversion supports headings, emphasis, lists, tables, and local images. Complex page layouts may change during conversion. Editing and conversion work offline.
 
 ## Vault access
+<img width="445" height="347" alt="image" src="https://github.com/user-attachments/assets/ad886044-5c5e-4df5-9970-53e3f7e5e721" />
 
 The system file chooser supplies the selected path. Vault documents use Obsidian’s file API. For an external document, the plugin reads and writes the chosen disk file directly. Save As and exports from an external tab use the system save dialog. External Markdown conversions can read linked images from the source folder and its subfolders. A restored external tab shows its path and offers to reopen it on the current computer. Obsidian’s directory calls this capability **Direct Filesystem Access**. Saving an external document writes to its directory and replaces the original once the write succeeds.
 
