@@ -120,12 +120,11 @@ function setupChrome() {
     runtime.dispatcher.dispatch(command);
   }, true);
   document.addEventListener("dragover", e => e.preventDefault());
-  document.addEventListener("drop", async e => {
+  document.addEventListener("drop", e => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file && /\.hwpx?$/i.test(file.name)) {
-      const bytes = await file.arrayBuffer();
-      port.postMessage({ type: "import", name: file.name, bytes }, [bytes]);
+      port.postMessage({ type: "drop", file });
     }
   });
 }

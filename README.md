@@ -12,9 +12,19 @@ For a manual installation, download `main.js`, `manifest.json`, and `styles.css`
 
 ## Open, edit, and save
 
-Click an `.hwpx` or `.hwp` file in the vault to open an editor tab. New documents use HWPX. Press **Ctrl+S** on Windows or Linux, or **Cmd+S** on macOS, to save. When several tabs edit the same document, the last tab you save writes its contents to the file. If rhwp reports that the original cannot be saved without losing objects, the plugin creates a conversion copy and shows its path.
+Click an HWPX or HWP file in the vault, or use **한글 문서 열기** in the command palette to open your system file chooser. Files outside the vault open directly from their original location. **Ctrl+S** (macOS **Cmd+S**) writes back to the same file. When several tabs edit one document, the last save wins. If rhwp cannot preserve the original format, an external tab asks you to use **Save As**. For a vault document, the plugin creates a conversion copy and shows its path.
 
 The ribbon button creates a document in the vault root by default. In **Settings → Hangle Editor**, choose another folder or toggle the ribbon icon. The separate attachment command uses **Files & Links → Default location for new attachments**, including locations relative to the current note.
+
+## Double-click documents in Windows File Explorer
+
+Enable Hangle Editor in the Obsidian vault you want to host the editor. Download and extract the optional Windows package, then open PowerShell in the extracted folder and run the following command with your vault name or full path. Registration applies to the current Windows user. [Windows Explorer package](https://github.com/visitor17564/hangle-editor/releases/latest/download/HangleEditor-Windows.zip)
+
+```powershell
+.\Register-HangleEditor.ps1 -Vault "Your vault"
+```
+
+Right-click a `.hwpx` file, choose **Open with → Choose another app → Hangle Editor → Always**, and repeat for `.hwp` if desired. Double-clicking a document now opens its original disk file in an Obsidian editor tab. You can use **Open with** for individual files while keeping another default application. To remove the registration, run `.\Register-HangleEditor.ps1 -Unregister`.
 
 ## Command palette
 
@@ -24,24 +34,24 @@ Press **Ctrl+P** (**Cmd+P** on macOS), type `Hangle Editor`, and press **Enter**
 | --- | --- |
 | 새 한글 문서 만들기 (HWPX) | Creates a blank HWPX in your chosen default folder. |
 | 첨부파일 위치에 새 HWPX 만들기 | Creates a blank HWPX at the current note’s attachment location. |
-| 한글 문서 열기 | Lets you choose an HWP or HWPX document in the vault. |
+| 한글 문서 열기 | Opens the system file chooser for HWP and HWPX documents, inside or outside the vault. |
 | 한글 문서 저장 | Saves the active document. |
 | 한글 문서 다른 이름으로 저장 | Saves a copy as HWPX, HWP, PDF, or Markdown. |
 | PDF 내보내기 | Exports the current layout to PDF, with each page rendered as an image. |
 | Markdown 내보내기 | Exports editable text and tables to a Markdown note. |
-| Markdown에서 HWPX 만들기 | Converts the active Markdown note, or lets you choose one. The HWPX is saved beside the source. |
+| Markdown에서 HWPX 만들기 | Converts the active Markdown note, or opens the system file chooser. The HWPX is saved beside the source, including for external Markdown files. |
 
 Save and export commands appear when the active HWP or HWPX editor is ready. The editor’s **File** menu also offers Save As, conversion, export, and print. Markdown conversion supports headings, emphasis, lists, tables, and local images. Complex page layouts may change during conversion. Editing and conversion work offline.
 
 ## Vault access
 
-Opening the document picker lists vault file paths so you can find HWP and HWPX files by name across folders. When you choose a Markdown source, the picker lists Markdown paths. The folder setting lists vault folders. These lists come from Obsidian’s local index. The plugin reads the document you open and local images referenced by a note you convert, then writes the file you create, save, or export. Hangle Editor processes the files locally.
+The system file chooser supplies the selected path. Vault documents use Obsidian’s file API. For an external document, the plugin reads and writes the chosen disk file directly. Save As and exports from an external tab use the system save dialog. External Markdown conversions can read linked images from the source folder and its subfolders. A restored external tab shows its path and offers to reopen it on the current computer.
 
 ## Build and verify
 
 Run `npm ci`, `npm run lint`, and `npm run build` with Node.js 22 or later and Git. The build fetches pinned HOP and rhwp revisions. Set `HWP_EDITOR_CACHE` to choose the checkout directory. It embeds the editor and document engine in `main.js` and checks that the finished file is under 5,000,000 bytes.
 
-Starting with 0.2.6, GitHub Actions builds the tagged source and signs the digests of the three installation files. To verify a downloaded file, run `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.2.7`, substituting the file and release tag you downloaded. [Release workflow](.github/workflows/attest-release.yml)
+GitHub Actions builds the tagged source and signs the three plugin files and the optional Windows package. To verify a downloaded file, run `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.3.0`, substituting the file and release tag you downloaded. [Release workflow](.github/workflows/attest-release.yml)
 
 ## Credits and licenses
 

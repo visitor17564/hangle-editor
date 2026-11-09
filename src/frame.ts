@@ -77,7 +77,7 @@ export async function createHwpx(container: HTMLElement, html = ""): Promise<Arr
 export interface Snapshot { bytes: ArrayBuffer; revision: number; losses: number }
 export type EditorEvent = { type: "changed"; revision: number } | { type: "action"; action: string } |
   { type: "ready"; pages: number } | { type: "error" | "failed"; message: string } |
-  { type: "import"; name: string; bytes: ArrayBuffer };
+  { type: "drop"; file: File };
 
 function isCount(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
@@ -93,7 +93,7 @@ function editorEvent(data: Record<string, unknown>): EditorEvent | undefined {
     case "action": if (typeof data.action === "string") return { type, action: data.action }; break;
     case "ready": if (isCount(data.pages)) return { type, pages: data.pages }; break;
     case "error": case "failed": if (typeof data.message === "string") return { type, message: data.message }; break;
-    case "import": if (typeof data.name === "string" && data.bytes instanceof ArrayBuffer) return { type, name: data.name, bytes: data.bytes }; break;
+    case "drop": if (data.file instanceof File) return { type, file: data.file }; break;
   }
 }
 

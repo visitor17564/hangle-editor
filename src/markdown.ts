@@ -1,5 +1,6 @@
-import { App, TFile, getFrontMatterInfo, htmlToMarkdown, sanitizeHTMLToDom } from "obsidian";
+import { App, getFrontMatterInfo, htmlToMarkdown, sanitizeHTMLToDom } from "obsidian";
 import { Marked, type TokenizerExtension } from "marked";
+import { DiskFile, externalImage, readExternal, type DocumentFile } from "./desktop";
 
 const imageTypes: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
   gif: "image/gif", webp: "image/webp", bmp: "image/bmp" };
@@ -16,8 +17,8 @@ const wikiLinks: TokenizerExtension = {
   }
 };
 
-async function imageData(app: App, file: TFile, mime: string): Promise<string> {
-  const bytes = await app.vault.readBinary(file);
+async function imageData(app: App, file: DocumentFile, mime: string): Promise<string> {
+  const bytes = file instanceof DiskFile ? await readExternal(file) : await app.vault.readBinary(file);
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -29,7 +30,7 @@ async function imageData(app: App, file: TFile, mime: string): Promise<string> {
   });
 }
 
-export async function noteHtml(app: App, file: TFile, text: string): Promise<string> {
+export async function noteHtml(app: App, file: DocumentFile, text: string): Promise<string> {
   const images = new Map<string, Promise<string>>();
   const parser = new Marked({ gfm: true, async: true, extensions: [wikiLinks], walkTokens: async token => {
     if (token.type !== "image") return;
@@ -37,7 +38,7 @@ export async function noteHtml(app: App, file: TFile, text: string): Promise<str
     if (typeof href !== "string" || /^(?:[a-z][\w+.-]*:|\/\/)/i.test(href)) return;
     let path = href;
     try { path = decodeURIComponent(path); } catch { /* Literal percent in a filename. */ }
-    const asset = app.metadataCache.getFirstLinkpathDest(path, file.path);
+    const asset = file instanceof DiskFile ? await externalImage(file, path) : app.metadataCache.getFirstLinkpathDest(path, file.path);
     const mime = asset && imageTypes[asset.extension.toLowerCase()];
     if (!asset || !mime) return;
     if (!images.has(asset.path)) images.set(asset.path, imageData(app, asset, mime));

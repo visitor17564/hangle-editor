@@ -1,9 +1,10 @@
 import { App, FuzzySuggestModal, Modal, Notice, Setting, TFile, TFolder, Vault, normalizePath } from "obsidian";
+import { DiskFile, writeExternal, type DocumentFile } from "./desktop";
 
 export type Format = "hwp" | "hwpx";
 export type OutputFormat = Format | "pdf" | "md";
-export function supported(file: TFile): boolean { return /^hwpx?$/i.test(file.extension); }
-export const formatOf = (file: TFile): Format => file.extension.toLowerCase() === "hwpx" ? "hwpx" : "hwp";
+export function supported(file: DocumentFile): boolean { return /^hwpx?$/i.test(file.extension); }
+export const formatOf = (file: DocumentFile): Format => file.extension.toLowerCase() === "hwpx" ? "hwpx" : "hwp";
 
 function sibling(folder: TFolder | null, name: string): string {
   return normalizePath(folder && !folder.isRoot() ? folder.path + "/" + name : name);
@@ -17,14 +18,14 @@ export function availablePath(vault: Vault, folder: TFolder | null, base: string
   for (let n = 2; vault.getAbstractFileByPath(path); n++) path = sibling(folder, base + " " + n + "." + extension);
   return path;
 }
-export class DocumentPicker extends FuzzySuggestModal<TFile> {
-  constructor(app: App, private files: TFile[], private choose: (file: TFile) => void, placeholder = "HWPX 또는 HWP 문서 찾기") {
+export class DocumentPicker extends FuzzySuggestModal<DocumentFile> {
+  constructor(app: App, private files: DocumentFile[], private choose: (file: DocumentFile) => void, placeholder = "최근에 연 한글 문서 찾기") {
     super(app);
     this.setPlaceholder(placeholder);
   }
   getItems() { return this.files; }
-  getItemText(file: TFile) { return file.path; }
-  onChooseItem(file: TFile) { this.choose(file); }
+  getItemText(file: DocumentFile) { return file.path; }
+  onChooseItem(file: DocumentFile) { this.choose(file); }
 }
 type CloseChoice = "save" | "discard" | "keep";
 export class UnsavedDialog extends Modal {
@@ -95,11 +96,14 @@ export async function choosePath(app: App, folder: TFolder | null, initial: stri
   return name ? sibling(folder, name) : null;
 }
 
-export interface WriteTarget { original: TFile; file: TFile; protectOriginal: boolean; }
-export function targetFor(file: TFile, bytes: ArrayBuffer): WriteTarget {
+export type WriteTarget = { kind: "vault"; original: TFile; file: TFile; protectOriginal: boolean } |
+  { kind: "external"; original: DiskFile; file: DiskFile; protectOriginal: boolean };
+export function targetFor(file: DocumentFile, bytes: ArrayBuffer): WriteTarget {
   const data = new Uint8Array(bytes);
   const signature = formatOf(file) === "hwpx" ? [0x50, 0x4b, 0x03, 0x04] : [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-  return { original: file, file, protectOriginal: !signature.every((v, i) => data[i] === v) };
+  const protectOriginal = !signature.every((v, i) => data[i] === v);
+  return file instanceof DiskFile ? { kind: "external", file, original: file, protectOriginal } :
+    { kind: "vault", file, original: file, protectOriginal };
 }
 
 // Reserve the save order before requesting bytes from a tab's asynchronous frame.
@@ -112,6 +116,11 @@ export class VaultWriter {
     return job;
   }
   async write(target: WriteTarget, bytes: ArrayBuffer, losses: number): Promise<string | null> {
+    if (target.kind === "external") {
+      if (target.protectOriginal || losses > 0) throw Error("원본 형식이나 일부 개체를 보존할 수 없습니다. 다른 이름으로 저장하세요.");
+      await writeExternal(target.file.path, bytes, true);
+      return null;
+    }
     const file = target.file;
     const current = this.vault.getFileByPath(file.path);
     const limited = target.file === target.original && (losses > 0 || target.protectOriginal);

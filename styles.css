@@ -1,4 +1,4 @@
-.workspace-leaf-content[data-type="hangle-editor"] .view-content {
+.workspace-leaf-content:is([data-type="hangle-editor"], [data-type="hangle-editor-external"]) .view-content {
   display: flex;
   flex-direction: column;
   padding: 0;

@@ -1,10 +1,13 @@
-import { EditableFileView, Notice, Platform, TFile, WorkspaceLeaf } from "obsidian";
+import { EditableFileView, ItemView, Notice, Platform, TFile, type ViewStateResult, WorkspaceLeaf } from "obsidian";
 import type HangleEditor from "./main";
-import { availablePath, choosePath, formatOf, targetFor, UnsavedDialog, validName, type WriteTarget, type OutputFormat } from "./files";
+import { availablePath, choosePath, formatOf, targetFor, UnsavedDialog, type WriteTarget, type OutputFormat } from "./files";
+import { chooseNativeOutput, DiskFile, droppedPath, readExternal, saveNativeOutput, type DocumentFile } from "./desktop";
+import { isRecord } from "./guards";
 import { StudioFrame, type EditorEvent, type Snapshot } from "./frame";
 import { asMarkdown } from "./markdown";
 
 export const VIEW_TYPE = "hangle-editor";
+export const EXTERNAL_VIEW_TYPE = "hangle-editor-external";
 export interface Draft { target: WriteTarget; snapshot: Snapshot; }
 
 class DocumentSession {
@@ -19,8 +22,8 @@ class DocumentSession {
   get ready() { return this.frame.ready && !this.stopping; }
   get dirty() { return this.revision > this.storedRevision; }
 
-  constructor(private plugin: HangleEditor, container: HTMLElement, file: TFile, bytes: ArrayBuffer,
-      private showCopy: (file: TFile) => Promise<void>, draft?: Draft) {
+  constructor(private plugin: HangleEditor, container: HTMLElement, file: DocumentFile, bytes: ArrayBuffer,
+      private showCopy: (file: DocumentFile) => Promise<void>, draft?: Draft) {
     this.target = draft?.target ?? targetFor(file, bytes);
     this.status = container.createDiv({ cls: "hangle-editor-status", text: "한글 문서를 여는 중…" });
     this.frame = new StudioFrame(container, e => this.receive(e));
@@ -41,16 +44,10 @@ class DocumentSession {
       this.revision = event.revision;
     } else if (event.type === "action") {
       this.plugin.report(this.action(event.action));
-    } else if (event.type === "import") {
-      this.plugin.report(this.importFile(event.name, event.bytes));
+    } else if (event.type === "drop") {
+      const path = droppedPath(this.status.win, event.file);
+      this.plugin.report(path ? this.plugin.openPath(path) : this.plugin.pick(false, this.status.win));
     }
-  }
-  private async importFile(name: string, bytes: ArrayBuffer) {
-    if (!validName(name) || !/\.hwpx?$/i.test(name) || !(bytes instanceof ArrayBuffer)) return;
-    const dot = name.lastIndexOf(".");
-    const path = availablePath(this.plugin.app.vault, this.target.original.parent, name.slice(0, dot), name.slice(dot + 1).toLowerCase());
-    const file = await this.plugin.app.vault.createBinary(path, bytes);
-    await this.plugin.open(file);
   }
   private enqueue<T>(work: () => Promise<T>): Promise<T> {
     const job = this.pending.then(work);
@@ -76,7 +73,7 @@ class DocumentSession {
       if (!closing) throw error;
       // Keep the captured bytes accessible even if the vault becomes read-only on close.
       const fragment = createFragment();
-      fragment.createDiv({ text: `보관함에 저장하지 못했습니다. ${String(error)}` });
+      fragment.createDiv({ text: `문서를 저장하지 못했습니다. ${String(error)}` });
       const button = fragment.createEl("button", { text: "편집본 내려받기" });
       const link = fragment.createEl("a", { attr: { download: file.name, hidden: "" } });
       const notice = new Notice(fragment, 0);
@@ -103,21 +100,25 @@ class DocumentSession {
         cancelable: true, ctrlKey: !Platform.isMacOS, metaKey: Platform.isMacOS }));
       return;
     }
-    if (action === "open" || action === "recent") { this.plugin.pick(action === "recent"); return; }
+    if (action === "open" || action === "recent") { await this.plugin.pick(action === "recent", this.status.win); return; }
     if (action === "save") { await this.save(); return; }
     if (action !== "save-as" && action !== "pdf" && action !== "md") return;
 
     const { app } = this.plugin, file = this.target.file;
     const only = action === "save-as" ? undefined : action;
-    const initial = availablePath(app.vault, file.parent, only ? file.basename : file.basename + " (사본)", only ?? "hwpx").split("/").pop()!;
-    const path = await choosePath(app, file.parent, initial, only);
+    let path: string | null;
+    if (file instanceof DiskFile) path = await chooseNativeOutput(this.status.win, file, only);
+    else {
+      const initial = availablePath(app.vault, file.parent, only ? file.basename : file.basename + " (사본)", only ?? "hwpx").split("/").pop()!;
+      path = await choosePath(app, file.parent, initial, only);
+    }
     if (!path || !this.ready) return;
     const format = path.split(".").pop()!.toLowerCase() as OutputFormat;
     const editable = format === "hwpx" || format === "hwp";
     const copy = await this.enqueue(async () => {
       const snapshot = await this.frame.snapshot(format === "md" ? "html" : format);
-      const copy = format === "md" ? await app.vault.create(path, asMarkdown(snapshot.bytes))
-        : await app.vault.createBinary(path, snapshot.bytes);
+      const bytes = format === "md" ? new TextEncoder().encode(asMarkdown(snapshot.bytes)).buffer : snapshot.bytes;
+      const copy = file instanceof DiskFile ? await saveNativeOutput(app, file, path, bytes) : await app.vault.createBinary(path, bytes);
       const loss = snapshot.losses ? ` · 일부 개체 ${snapshot.losses}건을 보존하지 못했습니다.` : "";
       new Notice("저장됨 · " + path + loss, snapshot.losses ? 10000 : 4000);
       if (editable) {
@@ -146,34 +147,32 @@ class DocumentSession {
   }
 }
 
-export class HwpView extends EditableFileView {
+class EditorTab {
   private session?: DocumentSession;
   private generation = 0;
-  constructor(leaf: WorkspaceLeaf, private plugin: HangleEditor) { super(leaf); }
-  getViewType() { return VIEW_TYPE; }
-  getIcon() { return "file-text"; }
-  canAcceptExtension(extension: string) { return /^hwpx?$/i.test(extension); }
-  canEdit() { return this.session?.ready ?? false; }
-  async action(action: string) { await this.session?.action(action); }
-  protected async onOpen() {
-    this.registerEvent(this.app.workspace.on("css-change", () =>
-      this.session?.theme(this.containerEl.ownerDocument.body.classList.contains("theme-dark"))));
-    this.registerDomEvent(this.containerEl.win, "beforeunload", event => {
+  constructor(private view: ItemView, private plugin: HangleEditor) {}
+  bind() {
+    const { view } = this;
+    view.registerEvent(view.app.workspace.on("css-change", () =>
+      this.session?.theme(view.containerEl.ownerDocument.body.classList.contains("theme-dark"))));
+    view.registerDomEvent(view.containerEl.win, "beforeunload", event => {
       if (this.session?.dirty) event.preventDefault();
     });
   }
-  async onLoadFile(file: TFile) {
-    const token = ++this.generation;
+  get ready() { return this.session?.ready ?? false; }
+  async action(action: string) { await this.session?.action(action); }
+  async load(file: DocumentFile) {
+    const token = ++this.generation, { view, plugin } = this;
     await this.release();
     if (token !== this.generation) return;
-    this.contentEl.empty();
+    view.contentEl.empty();
     try {
-      const draft = this.plugin.takeDraft(this.leaf, file);
-      const bytes = draft?.snapshot.bytes ?? await this.app.vault.readBinary(file);
-      if (token === this.generation) this.session = new DocumentSession(
-        this.plugin, this.contentEl, file, bytes, copy => this.leaf.openFile(copy), draft);
+      const draft = plugin.takeDraft(view.leaf, file);
+      const bytes = draft?.snapshot.bytes ?? (file instanceof DiskFile ? await readExternal(file) : await view.app.vault.readBinary(file));
+      if (token === this.generation) this.session = new DocumentSession(plugin, view.contentEl, file, bytes,
+        copy => plugin.openInLeaf(view.leaf, copy), draft);
     } catch (error) {
-      if (token === this.generation) this.contentEl.createDiv({ cls: "hangle-editor-status", text: "파일 읽기 실패 · " + String(error) });
+      if (token === this.generation) view.contentEl.createDiv({ cls: "hangle-editor-status", text: "파일 읽기 실패 · " + String(error) });
     }
   }
   private async release() {
@@ -181,6 +180,49 @@ export class HwpView extends EditableFileView {
     this.session = undefined;
     await session?.close();
   }
-  async onUnloadFile() { ++this.generation; await this.release(); }
-  protected async onClose() { ++this.generation; await this.release(); }
+  async close() { ++this.generation; await this.release(); }
+}
+
+export class HwpView extends EditableFileView {
+  private editor: EditorTab;
+  constructor(leaf: WorkspaceLeaf, plugin: HangleEditor) { super(leaf); this.editor = new EditorTab(this, plugin); }
+  getViewType() { return VIEW_TYPE; }
+  getIcon() { return "file-text"; }
+  canAcceptExtension(extension: string) { return /^hwpx?$/i.test(extension); }
+  canEdit() { return this.editor.ready; }
+  action(action: string) { return this.editor.action(action); }
+  protected async onOpen() { this.editor.bind(); }
+  onLoadFile(file: TFile) { return this.editor.load(file); }
+  onUnloadFile() { return this.editor.close(); }
+  protected onClose() { return this.editor.close(); }
+}
+
+export class ExternalHwpView extends ItemView {
+  private editor: EditorTab;
+  private source?: DiskFile;
+  constructor(leaf: WorkspaceLeaf, private plugin: HangleEditor) { super(leaf); this.editor = new EditorTab(this, plugin); }
+  getViewType() { return EXTERNAL_VIEW_TYPE; }
+  getIcon() { return "file-text"; }
+  getDisplayText() { return this.source?.name ?? "외부 한글 문서"; }
+  getState() { return this.source ? { externalPath: this.source.path } : {}; }
+  async show(file: DiskFile) { this.source = file; await this.editor.load(file); }
+  canEdit() { return this.editor.ready; }
+  action(action: string) { return this.editor.action(action); }
+  protected async onOpen() { this.editor.bind(); }
+  protected onClose() { return this.editor.close(); }
+  async setState(state: unknown, result: ViewStateResult) {
+    await super.setState(state, result);
+    if (!isRecord(state) || typeof state.externalPath !== "string" || !/\.hwpx?$/i.test(state.externalPath)) return;
+    const path = state.externalPath;
+    if (this.source?.path === path && this.editor.ready) return;
+    this.source = new DiskFile(path);
+    if (this.plugin.hasOpenedExternal(path)) { await this.editor.load(this.source); return; }
+    // A synced workspace may contain another computer's path. Read it only after a local choice.
+    await this.editor.close();
+    this.contentEl.empty();
+    const status = this.contentEl.createDiv({cls:"hangle-editor-status"});
+    status.createDiv({text:path});
+    status.createEl("button",{text:"외부 원본 다시 열기"}).addEventListener("click",() =>
+      this.plugin.report(this.plugin.openPath(path, this.leaf)));
+  }
 }

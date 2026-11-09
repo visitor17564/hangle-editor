@@ -28,13 +28,15 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run lint
       - run: npm run build
-      - name: Attest the three installable files
+      - run: npm run package:windows
+      - name: Attest the plugin and optional Windows launcher package
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: |
             main.js
             manifest.json
             styles.css
+            HangleEditor-Windows.zip
           create-storage-record: false
       - name: Save the signed build outputs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -44,5 +46,6 @@ jobs:
             main.js
             manifest.json
             styles.css
+            HangleEditor-Windows.zip
           if-no-files-found: error
           retention-days: 7

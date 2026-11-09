@@ -1,4 +1,4 @@
-import { App, FuzzySuggestModal, PluginSettingTab, Setting, type SettingDefinitionItem, TFolder } from "obsidian";
+import { PluginSettingTab, Setting, type SettingDefinitionItem } from "obsidian";
 import type HangleEditor from "./main";
 
 export const NEW_ICON = "hangle-editor-new";
@@ -9,19 +9,6 @@ const ROOT_LABEL = "보관함 최상위";
 const FOLDER_LABEL = "새 문서 기본 폴더";
 const RIBBON_LABEL = "새 한글 문서 리본 아이콘";
 const RIBBON_DESC = "왼쪽 리본에서 새 HWPX 문서를 만듭니다.";
-
-class FolderPicker extends FuzzySuggestModal<TFolder> {
-  constructor(app: App, private choose: (path: string) => void) {
-    super(app);
-    this.setPlaceholder("새 HWPX를 저장할 보관함 폴더 찾기");
-  }
-  getItems() {
-    const { vault } = this.app;
-    return [vault.getRoot(), ...vault.getAllFolders().sort((a, b) => a.path.localeCompare(b.path))];
-  }
-  getItemText(folder: TFolder) { return folder.isRoot() ? ROOT_LABEL : folder.path; }
-  onChooseItem(folder: TFolder) { this.choose(folder.isRoot() ? "" : folder.path); }
-}
 
 export class HangleSettings extends PluginSettingTab {
   constructor(private editor: HangleEditor) { super(editor.app, editor); }
@@ -39,9 +26,9 @@ export class HangleSettings extends PluginSettingTab {
   }
   private folderButton(destination: Setting) {
     destination.addButton(button => button.setButtonText("폴더 선택").onClick(() => {
-      new FolderPicker(this.app, path => {
-        this.editor.report(this.editor.setNewDocumentFolder(path).then(() => { destination.setDesc(this.folderDescription()); }));
-      }).open();
+      this.editor.report(this.editor.selectDefaultFolder(button.buttonEl.win).then(changed => {
+        if (changed) destination.setDesc(this.folderDescription());
+      }));
     }));
   }
   // Obsidian 1.12.x has no declarative settings renderer.
