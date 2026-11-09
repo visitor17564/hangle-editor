@@ -22,7 +22,7 @@ Hangle Editor에서는 이 편집기를 보관함 탭에 연결하고, 명령 �
 
 ## Windows 파일 탐색기에서 더블클릭으로 열기
 
-Hangle Editor를 켜 둔 Obsidian 보관함을 하나 선택합니다. Windows용 압축 파일을 풀고 그 폴더에서 PowerShell을 연 뒤, 아래 명령에 실제 보관함 이름이나 전체 경로를 입력하세요. 연결 프로그램은 현재 Windows 사용자에게 등록됩니다. [Windows 연결 프로그램 다운로드](https://github.com/visitor17564/hangle-editor/releases/latest/download/HangleEditor-Windows.zip)
+Hangle Editor를 켜 둔 Obsidian 보관함을 하나 선택합니다. Windows용 압축 파일을 풀고 그 폴더에서 PowerShell을 연 뒤, 아래 명령에 실제 보관함 이름이나 전체 경로를 입력하세요. 연결 프로그램은 현재 Windows 사용자에게 등록됩니다. [Windows 연결 프로그램 다운로드](https://github.com/visitor17564/hangle-editor/releases/download/0.3.0/HangleEditor-Windows.zip)
 
 ```powershell
 .\Register-HangleEditor.ps1 -Vault "보관함 이름"
@@ -54,7 +54,7 @@ Hangle Editor를 켜 둔 Obsidian 보관함을 하나 선택합니다. Windows�
 
 ## 저장과 변환
 
-- 파일 탐색기가 선택한 경로를 편집기에 전달합니다. 보관함 문서는 Obsidian의 파일 API로, 외부 문서는 해당 디스크 경로에서 읽고 씁니다. 외부 Markdown에 연결된 이미지는 원본 폴더와 그 하위 폴더에서 읽습니다. 외부 문서 탭을 다음 실행에서 복원하면 표시된 경로를 확인하고 **외부 원본 다시 열기**를 누를 수 있습니다.
+- 파일 탐색기가 선택한 경로를 편집기에 전달합니다. 보관함 문서는 Obsidian의 파일 API로, 외부 문서는 해당 디스크 경로에서 읽고 씁니다. 외부 Markdown에 연결된 이미지는 원본 폴더와 그 하위 폴더에서 읽습니다. 외부 문서 탭을 다음 실행에서 복원하면 표시된 경로를 확인하고 **외부 원본 다시 열기**를 누를 수 있습니다. 커뮤니티 검사에서 이 기능은 **Direct Filesystem Access**로 표시됩니다. 외부 원본 저장은 같은 폴더에서 쓰기를 마친 뒤 선택한 파일을 교체합니다.
 - 같은 문서를 여러 탭에서 편집하면 **마지막으로 저장한 탭의 내용이 원본에 남습니다**. 변경한 탭을 닫을 때는 저장·버리기·계속 편집 중에서 선택합니다.
 - 기존 HWP는 원래 형식으로 저장할 수 있습니다. 구형 포맷을 전환해야 하거나 일부 개체를 보존할 수 없으면 보관함 문서는 변환 사본을 만들고, 외부 문서는 **다른 이름으로 저장**을 안내합니다.
 - PDF는 rhwp가 그린 페이지를 이미지로 담습니다. 인쇄는 HOP의 인쇄용 페이지를 시스템 인쇄 창으로 보냅니다.
@@ -76,7 +76,7 @@ npm run build
 - `src/`에 파일 뷰, 명령 팔레트, 리본 설정, 보관함 입출력 코드가 있습니다.
 - `studio/`에서 HOP의 메뉴·도구 모음·편집 캔버스를 연결하고 rhwp 엔진으로 문서를 변환합니다.
 - 릴리스에는 `manifest.json`과 같은 버전의 태그를 붙이고 `main.js`, `manifest.json`, `styles.css`를 첨부합니다. [Obsidian 제출 안내](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin)
-- GitHub Actions가 태그의 소스를 빌드하고 세 플러그인 파일과 Windows 선택 설치 패키지의 출처를 증명합니다. 내려받은 파일은 `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.3.0`에서 파일명과 태그를 바꿔 검증할 수 있습니다. [빌드 및 서명 워크플로](.github/workflows/attest-release.yml)
+- GitHub Actions가 Obsidian 설치 파일의 출처를 증명합니다. 0.3.1 본체는 내려받은 폴더에서 `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.3.1`로 검증할 수 있습니다. 별도 다운로드하는 Windows 연결 프로그램 패키지의 서명 태그는 `0.3.0`입니다. [빌드 및 서명 워크플로](.github/workflows/attest-release.yml)
 
 ## 원본과 라이선스
 

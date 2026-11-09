@@ -18,7 +18,7 @@ The ribbon button creates a document in the vault root by default. In **Settings
 
 ## Double-click documents in Windows File Explorer
 
-Enable Hangle Editor in the Obsidian vault you want to host the editor. Download and extract the optional Windows package, then open PowerShell in the extracted folder and run the following command with your vault name or full path. Registration applies to the current Windows user. [Windows Explorer package](https://github.com/visitor17564/hangle-editor/releases/latest/download/HangleEditor-Windows.zip)
+Enable Hangle Editor in the Obsidian vault you want to host the editor. Download and extract the optional Windows package, then open PowerShell in the extracted folder and run the following command with your vault name or full path. Registration applies to the current Windows user. [Windows Explorer package](https://github.com/visitor17564/hangle-editor/releases/download/0.3.0/HangleEditor-Windows.zip)
 
 ```powershell
 .\Register-HangleEditor.ps1 -Vault "Your vault"
@@ -45,13 +45,13 @@ Save and export commands appear when the active HWP or HWPX editor is ready. The
 
 ## Vault access
 
-The system file chooser supplies the selected path. Vault documents use Obsidian’s file API. For an external document, the plugin reads and writes the chosen disk file directly. Save As and exports from an external tab use the system save dialog. External Markdown conversions can read linked images from the source folder and its subfolders. A restored external tab shows its path and offers to reopen it on the current computer.
+The system file chooser supplies the selected path. Vault documents use Obsidian’s file API. For an external document, the plugin reads and writes the chosen disk file directly. Save As and exports from an external tab use the system save dialog. External Markdown conversions can read linked images from the source folder and its subfolders. A restored external tab shows its path and offers to reopen it on the current computer. Obsidian’s directory calls this capability **Direct Filesystem Access**. Saving an external document writes to its directory and replaces the original once the write succeeds.
 
 ## Build and verify
 
 Run `npm ci`, `npm run lint`, and `npm run build` with Node.js 22 or later and Git. The build fetches pinned HOP and rhwp revisions. Set `HWP_EDITOR_CACHE` to choose the checkout directory. It embeds the editor and document engine in `main.js` and checks that the finished file is under 5,000,000 bytes.
 
-GitHub Actions builds the tagged source and signs the three plugin files and the optional Windows package. To verify a downloaded file, run `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.3.0`, substituting the file and release tag you downloaded. [Release workflow](.github/workflows/attest-release.yml)
+For plugin 0.3.1, GitHub Actions signs the files that Obsidian installs. For example, run `gh attestation verify main.js --repo visitor17564/hangle-editor --source-ref refs/tags/0.3.1` in the download folder. The optional Windows package has its own download above, signed under tag `0.3.0`. [Release workflow](.github/workflows/attest-release.yml)
 
 ## Credits and licenses
 
